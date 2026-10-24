@@ -1,0 +1,1014 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026 九合一縣市長預測</title>
+<meta name="description" content="2026 年台灣九合一選舉 22 縣市長每週預測：投票率、各陣營得票數、得票率、催票率與勝率，保留歷次預測紀錄。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@500&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<style>
+  /* 獨立版：補上 claude.ai 儀表板原本提供的字體、間距與顏色 token */
+  :root {
+    --font-anthropic-sans: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+    --font-anthropic-serif: "Noto Serif TC", "Songti TC", "PMingLiU", serif;
+    --cds-font-size-caption: .8rem; --cds-font-size-body: .95rem; --cds-font-size-heading: 1.05rem; --cds-font-size-title: 1.6rem;
+    --cds-font-weight-medium: 600;
+    --cds-gap-xs: .25rem; --cds-gap-sm: .5rem; --cds-gap-md: .75rem; --cds-gap-lg: 1rem; --cds-gap-xl: 1.5rem;
+    --cds-pad-xs: .25rem; --cds-pad-sm: .5rem; --cds-pad-md: .75rem; --cds-pad-lg: 1.1rem; --cds-pad-xl: 1.6rem;
+    --cds-radius: 10px; --cds-dur-slow: .3s;
+    --color-bg: #f5f6f8; --color-panel: #ffffff; --color-fg: #1b1f24; --color-fg-muted: #5c6370; --color-border-line: #dfe2e7;
+    --color-bad: #c0392b;
+    --cds-chart-grid: #e7e9ed; --cds-chart-axis: #c4c8cf; --cds-surface-popover: #ffffff; --cds-border: #dfe2e7; --cds-text-secondary: #5c6370;
+    --cds-shadow-popover: 0 4px 16px rgba(20, 24, 31, .12);
+  }
+  html, body { margin: 0; background: #f5f6f8; }
+  body:has(.lx[data-mode="dark"]) { background: #111317; }
+  .dash-skeleton { display: inline-block; min-width: 2ch; border-radius: 4px; background: color-mix(in srgb, currentColor 12%, transparent); color: transparent; }
+  .lx-foot { font-family: var(--font-anthropic-sans); font-size: .75rem; color: var(--color-fg-muted); text-align: center; padding: 1rem; }
+
+  /* 版面：選舉之夜開票看板的語彙——頂部標題與倒數、席次條、陣營 KPI、版圖人口條；下方方格地圖＋總表；分頁：總覽／縣市明細／歷史／民調／方法 */
+  #dash-root { --dash-gutter: 0; }
+  .lx {
+    --lx-kmt: #2b5cc4;
+    --lx-tpp: #0f9a9d;
+    --lx-dpp: #16884a;
+    --lx-oth: #8a8f99;
+    --lx-ink-on: #ffffff;
+    --lx-tint: color-mix(in srgb, var(--color-fg) 5%, transparent);
+    --lx-line: var(--color-border-line);
+    font-family: var(--font-anthropic-sans); font-size: var(--cds-font-size-body); color: var(--color-fg); background: var(--color-bg);
+    display: grid; gap: var(--cds-gap-xl);
+    padding-block: var(--cds-pad-lg) var(--cds-pad-xl);
+    padding-left: max(16px, 3vw); padding-right: max(16px, 3vw);
+    min-height: 100%;
+  }
+  /* 版面顏色：預設淺色，可切換深色 */
+  .lx[data-mode="light"] {
+    --color-bg: #f5f6f8; --color-panel: #ffffff; --color-fg: #1b1f24; --color-fg-muted: #5c6370; --color-border-line: #dfe2e7;
+    --cds-chart-grid: #e7e9ed; --cds-chart-axis: #c4c8cf; --cds-surface-popover: #ffffff; --cds-border: #dfe2e7; --cds-text-secondary: #5c6370;
+    --cds-shadow-popover: 0 4px 16px rgba(20, 24, 31, .12);
+    color-scheme: light;
+  }
+  .lx[data-mode="dark"] {
+    --color-bg: #111317; --color-panel: #1a1d22; --color-fg: #eceef2; --color-fg-muted: #9aa1ac; --color-border-line: #2c3139;
+    --cds-chart-grid: #262a31; --cds-chart-axis: #3a404a; --cds-surface-popover: #22262c; --cds-border: #353a43; --cds-text-secondary: #9aa1ac;
+    --cds-shadow-popover: 0 6px 20px rgba(0, 0, 0, .45);
+    --lx-kmt: #4a7be0; --lx-tpp: #1fb3b6; --lx-dpp: #23a35d; --lx-oth: #9aa0aa;
+    color-scheme: dark;
+  }
+  .lx-mode { display: inline-flex; border: 1px solid var(--lx-line); border-radius: 999px; overflow: hidden; background: var(--color-panel); }
+  .lx-mode button { font: inherit; font-size: var(--cds-font-size-caption); border: 0; background: transparent; color: var(--color-fg-muted); padding: 4px 12px; cursor: pointer; }
+  .lx-mode button[aria-pressed="true"] { background: var(--color-fg); color: var(--color-bg); }
+  .lx * { box-sizing: border-box; }
+  .lx [hidden] { display: none !important; }
+  .lx-num { font-variant-numeric: tabular-nums; }
+  .lx a { color: var(--lx-kmt); }
+
+  /* 標題區 */
+  .lx-hero { display: grid; gap: var(--cds-gap-sm); padding-bottom: var(--cds-pad-lg); border-bottom: 1px solid var(--lx-line); }
+  .lx-eyebrow { font-size: var(--cds-font-size-caption); letter-spacing: .12em; color: var(--color-fg-muted); }
+  .lx-hero-row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--cds-gap-md); }
+  .lx-title { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: clamp(1.7rem, 4vw, 2.6rem); line-height: 1.1; margin: 0; text-wrap: balance; }
+  .lx-meta { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm); align-items: center; }
+  .lx-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--lx-line); background: var(--color-panel); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); white-space: nowrap; }
+  .lx-pill b { color: var(--color-fg); font-weight: var(--cds-font-weight-medium); }
+  .lx-pill.is-count b { font-family: var(--font-anthropic-serif); font-size: 1.15rem; font-weight: 400; }
+  .lx select { font: inherit; color: var(--color-fg); background: transparent; border: 0; padding: 0; cursor: pointer; font-weight: var(--cds-font-weight-medium); }
+  .lx-sub { color: var(--color-fg-muted); margin: 0; max-width: 70ch; line-height: 1.7; }
+  .lx-sub b { color: var(--color-fg); font-weight: var(--cds-font-weight-medium); }
+
+  .lx-tabs { display: flex; gap: var(--cds-gap-xs); border-bottom: 1px solid var(--lx-line); overflow-x: auto; margin-top: calc(-1 * var(--cds-gap-md)); }
+  .lx-tab { font: inherit; background: none; border: 0; border-bottom: 2px solid transparent; color: var(--color-fg-muted); padding: var(--cds-pad-sm) var(--cds-pad-md); cursor: pointer; white-space: nowrap; }
+  .lx-tab:hover { color: var(--color-fg); }
+  .lx-tab[aria-selected="true"] { color: var(--color-fg); border-bottom-color: var(--color-fg); font-weight: var(--cds-font-weight-medium); }
+  .lx button:focus-visible, .lx select:focus-visible, .lx input:focus-visible { outline: 2px solid var(--lx-kmt); outline-offset: 2px; }
+  .lx-page { display: grid; gap: var(--cds-gap-xl); }
+  .lx-section { display: grid; gap: var(--cds-gap-md); }
+  .lx-h2 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0; }
+  .lx-note { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin: 0; line-height: 1.6; }
+
+  /* 席次條 */
+  .lx-seatbar { display: grid; grid-template-columns: repeat(22, 1fr); gap: 3px; }
+  .lx-seat { height: 2.6rem; border-radius: 4px; border: 1.5px solid transparent; cursor: pointer; display: flex; align-items: flex-end; justify-content: center; font: inherit; font-size: .62rem; color: var(--lx-ink-on); padding: 0 0 3px; overflow: hidden; }
+  .lx-seat:hover { outline: 2px solid var(--color-fg); outline-offset: 1px; }
+  .lx-seat.is-light { color: var(--color-fg); }
+  .lx-seat-legend { display: flex; justify-content: space-between; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+
+  /* KPI */
+  .lx-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr)); gap: var(--cds-gap-md); }
+  .lx-kpi { background: var(--color-panel); border: 1px solid var(--lx-line); border-top: 4px solid var(--k, var(--lx-line)); border-radius: var(--cds-radius); padding: var(--cds-pad-md) var(--cds-pad-lg); display: grid; gap: 2px; align-content: start; }
+  .lx-kpi-label { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .lx-kpi-val { font-family: var(--font-anthropic-serif); font-size: 2.4rem; line-height: 1.05; color: var(--k, var(--color-fg)); }
+  .lx-kpi-val small { font-family: var(--font-anthropic-sans); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-left: 4px; }
+  .lx-kpi-foot { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+
+  /* 版圖人口 */
+  .lx-popbar { display: flex; height: 2.4rem; border-radius: var(--cds-radius); overflow: hidden; background: var(--lx-tint); }
+  .lx-popbar div { display: flex; align-items: center; padding-inline: 10px; color: var(--lx-ink-on); font-size: var(--cds-font-size-caption); white-space: nowrap; overflow: hidden; min-width: 0; }
+  .lx-pops { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr)); gap: var(--cds-gap-md); }
+  .lx-pop { display: grid; gap: 2px; padding-left: var(--cds-pad-sm); border-left: 3px solid var(--k); }
+  .lx-pop-val { font-family: var(--font-anthropic-serif); font-size: 1.6rem; line-height: 1.1; }
+  .lx-pop-val small { font-family: var(--font-anthropic-sans); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-left: 3px; }
+
+  /* 卡片 */
+  .lx-grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); gap: var(--cds-gap-lg); align-items: start; }
+  .lx-card { background: var(--color-panel); border: 1px solid var(--lx-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); min-width: 0; display: grid; gap: var(--cds-gap-md); align-content: start; }
+  .lx-card-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--cds-gap-sm); }
+  .lx-legend { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm) var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .lx-legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .lx-sw { width: .85rem; height: .85rem; border-radius: 3px; display: inline-block; flex: none; }
+  .lx-dot { width: .6rem; height: .6rem; border-radius: 50%; display: inline-block; flex: none; }
+
+  /* 方格地圖：第 1 欄金馬、第 3 欄澎湖、第 5–8 欄本島 */
+  .lx-map { display: grid; grid-template-columns: 1fr 1.1fr 1fr .5fr repeat(4, 1fr); grid-auto-rows: 4.1rem; gap: 5px; max-width: 34rem; width: 100%; margin-inline: auto; }
+  .lx-tile { border-radius: 7px; border: 1.5px solid transparent; padding: 3px 2px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 1px; text-align: center; cursor: pointer; font: inherit; line-height: 1.2; min-width: 0; overflow: hidden; color: var(--color-fg); }
+  .lx-tile b { font-weight: var(--cds-font-weight-medium); font-size: .88rem; }
+  .lx-tile small { font-size: .64rem; opacity: .92; max-width: 100%; overflow-wrap: anywhere; }
+  .lx-tile .lx-tile-pct { font-variant-numeric: tabular-nums; font-weight: var(--cds-font-weight-medium); opacity: 1; }
+  .lx-tile.is-solid { color: var(--lx-ink-on); }
+  .lx-tile:hover { outline: 2px solid var(--color-fg); outline-offset: 1px; }
+  .lx-strait { font-size: .62rem; color: var(--color-fg-muted); writing-mode: vertical-rl; display: flex; align-items: center; justify-content: center; letter-spacing: .3em; opacity: .7; }
+
+  /* 清單 */
+  .lx-list { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--cds-gap-sm); }
+  .lx-list li { display: grid; grid-template-columns: 4rem 1fr; gap: var(--cds-gap-sm); align-items: baseline; font-size: var(--cds-font-size-caption); line-height: 1.6; padding-bottom: var(--cds-gap-sm); border-bottom: 1px dashed var(--lx-line); }
+  .lx-list li:last-child { border-bottom: 0; }
+  .lx-list b { font-weight: var(--cds-font-weight-medium); }
+
+  /* 表格 */
+  .lx-tools { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm); align-items: center; justify-content: space-between; }
+  .lx-tools input { font: inherit; color: var(--color-fg); background: var(--color-bg); border: 1px solid var(--lx-line); border-radius: 999px; padding: var(--cds-pad-xs) var(--cds-pad-md); min-width: 0; width: 15rem; max-width: 100%; }
+  .lx-filters { display: flex; flex-wrap: wrap; gap: var(--cds-gap-xs); }
+  .lx-filter { font: inherit; font-size: var(--cds-font-size-caption); border: 1px solid var(--lx-line); background: transparent; color: var(--color-fg-muted); border-radius: 999px; padding: 3px 10px; cursor: pointer; }
+  .lx-filter[aria-pressed="true"] { background: var(--color-fg); color: var(--color-bg); border-color: var(--color-fg); }
+  .lx-scroll { overflow: auto; max-height: 44rem; border: 1px solid var(--lx-line); border-radius: var(--cds-radius); }
+  .lx table { border-collapse: separate; border-spacing: 0; width: 100%; font-variant-numeric: tabular-nums; font-size: var(--cds-font-size-caption); }
+  .lx th, .lx td { padding: 7px 10px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--lx-line); }
+  .lx th { position: sticky; top: 0; background: var(--color-panel); z-index: 2; font-weight: var(--cds-font-weight-medium); color: var(--color-fg-muted); }
+  .lx th button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+  .lx th[aria-sort] { color: var(--color-fg); }
+  .lx .lx-l { text-align: left; }
+  .lx .lx-wrap { white-space: normal; min-width: 18rem; text-align: left; color: var(--color-fg-muted); line-height: 1.55; }
+  .lx .lx-sticky { position: sticky; left: 0; background: var(--color-panel); z-index: 1; }
+  .lx th.lx-sticky { z-index: 3; }
+  .lx tbody tr.lx-click { cursor: pointer; }
+  .lx tbody tr.lx-click:hover td { background: color-mix(in srgb, var(--color-fg) 4%, var(--color-panel)); }
+  .lx-gb { box-shadow: inset 0 3px 0 var(--lx-kmt); }
+  .lx-gg { box-shadow: inset 0 3px 0 var(--lx-dpp); }
+  .lx td.lx-sep, .lx th.lx-sep { border-left: 1px solid var(--lx-line); }
+  .lx .lx-strong { font-weight: var(--cds-font-weight-medium); color: var(--color-fg); }
+  .lx .lx-dim { color: var(--color-fg-muted); }
+  .lx-chip { display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: var(--cds-font-size-caption); border: 1px solid var(--k); color: var(--k); white-space: nowrap; }
+  .lx-chip.is-solid { background: var(--k); color: var(--lx-ink-on); }
+  .lx-win { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 6px; border: 2px solid var(--k); color: var(--k); background: color-mix(in srgb, var(--k) 10%, transparent); font-weight: var(--cds-font-weight-medium); }
+  .lx-win::after { content: "✓"; font-size: .8em; }
+  .lx-camp { font-size: .7rem; padding: 0 4px; border-radius: 3px; margin-left: 5px; color: var(--lx-ink-on); background: var(--k); vertical-align: 1px; }
+  .lx-delta.is-g { color: var(--lx-dpp); } .lx-delta.is-b { color: var(--lx-kmt); }
+
+  /* 縣市明細 */
+  .lx-detail-head { display: flex; flex-wrap: wrap; gap: var(--cds-gap-md); align-items: center; justify-content: space-between; }
+  .lx-detail-title { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: 2rem; margin: 0; }
+  .lx-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr)); gap: var(--cds-gap-md); }
+  .lx-fact { display: grid; gap: 2px; }
+  .lx-fact span:first-child { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .lx-fact span:last-child { font-family: var(--font-anthropic-serif); font-size: 1.4rem; }
+  .lx-probbar { display: flex; height: 2rem; border-radius: var(--cds-radius); overflow: hidden; background: var(--lx-tint); }
+  .lx-probbar div { display: flex; align-items: center; justify-content: center; color: var(--lx-ink-on); font-size: var(--cds-font-size-caption); white-space: nowrap; overflow: hidden; min-width: 0; }
+  .lx-range { position: relative; width: 8rem; height: .9rem; background: var(--lx-tint); border-radius: 3px; display: inline-block; vertical-align: middle; }
+  .lx-range i { position: absolute; top: 2px; bottom: 2px; border-radius: 3px; opacity: .35; }
+  .lx-range b { position: absolute; top: 0; bottom: 0; width: 2px; }
+  .lx tr.lx-winrow td { background: color-mix(in srgb, var(--color-fg) 4%, var(--color-panel)); }
+  .lx-break { display: grid; grid-template-columns: 1fr auto; gap: var(--cds-gap-xs) var(--cds-gap-md); font-size: var(--cds-font-size-caption); margin: 0; }
+  .lx-break dt { color: var(--color-fg-muted); } .lx-break dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+  .lx-chart { position: relative; min-height: 15rem; }
+  .lx-chart svg { display: block; }
+  .lx-tip { position: absolute; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); border-radius: var(--cds-radius); box-shadow: var(--cds-shadow-popover); padding: var(--cds-pad-xs) var(--cds-pad-sm); font-size: var(--cds-font-size-caption); white-space: nowrap; z-index: 5; }
+  .lx-tip .lx-tip-h { color: var(--cds-text-secondary); }
+  .lx-prose { max-width: 72ch; display: grid; gap: var(--cds-gap-sm); line-height: 1.75; }
+  .lx-prose h3 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: var(--cds-gap-md) 0 0; }
+  .lx-prose p, .lx-prose ul { margin: 0; }
+  [data-dash-source-state=empty] { color: transparent; }
+  [data-dash-source-state=refreshing] { opacity: .5; transition: opacity var(--cds-dur-slow); }
+  .lx-fail { display: flex; align-items: center; justify-content: center; gap: var(--cds-gap-xs); color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); min-height: 6rem; }
+  .lx-fail::before { content: ""; width: .375rem; height: .375rem; border-radius: 50%; background: var(--color-bad); }
+  @media (max-width: 40rem) {
+    .lx-hide-sm { display: none; }
+    .lx-map { grid-auto-rows: 3.5rem; gap: 3px; }
+    .lx-tile small { font-size: .55rem; }
+    .lx-tile b { font-size: .74rem; }
+    .lx-seat { font-size: 0; height: 2rem; }
+    .lx-kpi-val { font-size: 1.9rem; }
+  }
+
+</style>
+</head>
+<body>
+<script>
+  // 以靜態 JSON 取代 claude.ai 儀表板的 dash 介面（資料、計算、篩選參數）
+  window.dash = (() => {
+    const files = { weeks: 'data/weeks.json', counties: 'data/counties.json', candidates: 'data/candidates.json', polls: 'data/polls.json' };
+    const store = {}, calcs = {}, subs = [];
+    let params = { week: null };
+    const notify = () => subs.forEach((f) => f());
+    function compute() {
+      for (const [id, c] of Object.entries(calcs)) {
+        if (c.inputs.every((i) => store[i] && store[i].status === 'ok')) {
+          try { store[id] = { status: 'ok', data: c.fn(...c.inputs.map((i) => store[i].data)) }; }
+          catch (e) { store[id] = { status: 'error', data: [], message: String(e) }; }
+        }
+      }
+      notify();
+    }
+    Promise.all(Object.entries(files).map(([id, url]) => fetch(url, { cache: 'no-cache' })
+      .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then((d) => { store[id] = { status: 'ok', data: d }; })
+      .catch((e) => { store[id] = { status: 'error', data: [], message: String(e) }; }))).then(compute);
+    let t; window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(notify, 150); });
+    return {
+      data: (id) => store[id] || { status: 'loading', data: [] },
+      calc: (id, o) => { calcs[id] = o; },
+      loader: () => {},
+      onData: (f) => { subs.push(f); f(); },
+      params: () => params,
+      setParams: (p) => { params = { ...params, ...p }; notify(); },
+      resetParams: () => { params = { week: null }; notify(); },
+      setLink: (n) => { try { history.replaceState(null, '', '#' + n); } catch (e) {} },
+      refresh: () => {},
+      colors: []
+    };
+  })();
+</script>
+<div id="dash-root">
+
+
+<div class="lx" id="top" data-mode="light">
+  <header class="lx-hero">
+    <div class="lx-eyebrow">2026 地方公職人員選舉・22 縣市長</div>
+    <div class="lx-hero-row">
+      <h1 class="lx-title">2026 九合一縣市長預測</h1>
+      <div class="lx-meta">
+        <label class="lx-pill" for="lx-week">期別 <select id="lx-week" data-source="weeks"></select></label>
+        <span class="lx-pill is-count">距投票日 <b class="lx-num" id="lx-days" data-source="weeks" data-field="days_to_election">—</b> 天</span>
+        <span class="lx-pill">投票日 <b>11/28（六）</b></span>
+        <div class="lx-mode" role="group" aria-label="版面顏色">
+          <button type="button" data-mode="light" aria-pressed="true">淺色</button>
+          <button type="button" data-mode="dark" aria-pressed="false">深色</button>
+        </div>
+      </div>
+    </div>
+    <p class="lx-sub" id="lx-takeaway" data-source="seats"><span class="dash-skeleton">　</span></p>
+  </header>
+
+  <nav class="lx-tabs" role="tablist" aria-label="分頁">
+    <button class="lx-tab" role="tab" id="tab-overview" data-page="overview" aria-selected="true">總覽</button>
+    <button class="lx-tab" role="tab" id="tab-county" data-page="county" aria-selected="false">縣市明細</button>
+    <button class="lx-tab" role="tab" id="tab-history" data-page="history" aria-selected="false">歷史預測</button>
+    <button class="lx-tab" role="tab" id="tab-polls" data-page="polls" aria-selected="false">民調資料</button>
+    <button class="lx-tab" role="tab" id="tab-method" data-page="method" aria-selected="false">預測方法</button>
+  </nav>
+
+  <!-- 總覽 -->
+  <section class="lx-page" id="overview">
+    <div class="lx-section" id="sec-seats">
+      <div class="lx-card-head">
+        <h2 class="lx-h2">席次預測</h2>
+        <div class="lx-legend" id="lx-legend-top"></div>
+      </div>
+      <div class="lx-seatbar" id="lx-seatbar" data-source="counties"></div>
+      <div class="lx-seat-legend"><span>藍營</span><span>綠營</span></div>
+      <div class="lx-kpis">
+        <div class="lx-kpi" id="kpi-kmt" style="--k:var(--lx-kmt)">
+          <span class="lx-kpi-label">藍營領先</span>
+          <span class="lx-kpi-val lx-num"><span class="dash-skeleton" id="kpi-kmt-val" data-source="seats" data-field="kmt_seats">—</span><small>席</small></span>
+          <span class="lx-kpi-foot">期望 <span class="lx-num" id="kpi-kmt-exp" data-source="seats" data-field="kmt_exp">—</span> 席<span id="kpi-kmt-d"></span></span>
+        </div>
+        <div class="lx-kpi" id="kpi-tpp" style="--k:var(--lx-tpp)">
+          <span class="lx-kpi-label">白營領先</span>
+          <span class="lx-kpi-val lx-num"><span class="dash-skeleton" id="kpi-tpp-val" data-source="seats" data-field="tpp_seats">—</span><small>席</small></span>
+          <span class="lx-kpi-foot">期望 <span class="lx-num" id="kpi-tpp-exp" data-source="seats" data-field="tpp_exp">—</span> 席<span id="kpi-tpp-d"></span></span>
+        </div>
+        <div class="lx-kpi" id="kpi-g" style="--k:var(--lx-dpp)">
+          <span class="lx-kpi-label">綠營領先</span>
+          <span class="lx-kpi-val lx-num"><span class="dash-skeleton" id="kpi-g-val" data-source="seats" data-field="g_seats">—</span><small>席</small></span>
+          <span class="lx-kpi-foot">期望 <span class="lx-num" id="kpi-g-exp" data-source="seats" data-field="g_exp">—</span> 席<span id="kpi-g-d"></span></span>
+        </div>
+        <div class="lx-kpi" id="kpi-o" style="--k:var(--lx-oth)">
+          <span class="lx-kpi-label">其他領先</span>
+          <span class="lx-kpi-val lx-num"><span class="dash-skeleton" id="kpi-o-val" data-source="seats" data-field="o_seats">—</span><small>席</small></span>
+          <span class="lx-kpi-foot">期望 <span class="lx-num" id="kpi-o-exp" data-source="seats" data-field="o_exp">—</span> 席</span>
+        </div>
+        <div class="lx-kpi" id="kpi-close">
+          <span class="lx-kpi-label">勝負難料</span>
+          <span class="lx-kpi-val lx-num"><span class="dash-skeleton" id="kpi-close-val" data-source="seats" data-field="close">—</span><small>縣市</small></span>
+          <span class="lx-kpi-foot">領先者勝率低於 75%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="lx-section" id="sec-pop">
+      <div class="lx-card-head">
+        <h2 class="lx-h2">版圖人口</h2>
+        <span class="lx-note">依各縣市預測領先陣營加總；人口為內政部 2026 年 9 月底戶口統計</span>
+      </div>
+      <div class="lx-popbar" id="lx-popbar" data-source="seats"></div>
+      <div class="lx-pops">
+        <div class="lx-pop" style="--k:var(--lx-kmt)"><span class="lx-kpi-label">藍營</span><span class="lx-pop-val lx-num"><span id="pop-kmt" data-source="seats" data-field="kmt_pop">—</span><small>萬人</small></span><span class="lx-kpi-foot lx-num" id="pop-kmt-s" data-source="seats" data-field="kmt_pop_share">—</span></div>
+        <div class="lx-pop" style="--k:var(--lx-tpp)"><span class="lx-kpi-label">白營</span><span class="lx-pop-val lx-num"><span id="pop-tpp" data-source="seats" data-field="tpp_pop">—</span><small>萬人</small></span><span class="lx-kpi-foot lx-num" id="pop-tpp-s" data-source="seats" data-field="tpp_pop_share">—</span></div>
+        <div class="lx-pop" style="--k:var(--lx-dpp)"><span class="lx-kpi-label">綠營</span><span class="lx-pop-val lx-num"><span id="pop-g" data-source="seats" data-field="g_pop">—</span><small>萬人</small></span><span class="lx-kpi-foot lx-num" id="pop-g-s" data-source="seats" data-field="g_pop_share">—</span></div>
+        <div class="lx-pop" style="--k:var(--lx-oth)"><span class="lx-kpi-label">其他</span><span class="lx-pop-val lx-num"><span id="pop-o" data-source="seats" data-field="o_pop">—</span><small>萬人</small></span><span class="lx-kpi-foot lx-num" id="pop-o-s" data-source="seats" data-field="o_pop_share">—</span></div>
+      </div>
+    </div>
+
+    <div class="lx-grid2">
+      <div class="lx-card" id="card-map">
+        <div class="lx-card-head">
+          <h2 class="lx-h2">各縣市領先陣營</h2>
+          <span class="lx-note">顯示領先者的預測得票率</span>
+        </div>
+        <div class="lx-map" id="lx-map" data-source="counties"></div>
+        <div class="lx-legend" id="lx-map-legend"></div>
+        <p class="lx-note">顏色越深越穩；點縣市看明細。</p>
+      </div>
+      <div class="lx-card" id="card-close">
+        <div class="lx-card-head">
+          <h2 class="lx-h2">關鍵戰區</h2>
+          <span class="lx-note">領先者勝率低於 75% 的縣市</span>
+        </div>
+        <ul class="lx-list" id="lx-close" data-source="counties"></ul>
+        <h3 class="lx-h2" style="font-size:var(--cds-font-size-body)">本期變化</h3>
+        <ul class="lx-list" id="lx-highlights" data-source="delta"></ul>
+      </div>
+    </div>
+
+    <div class="lx-card" id="card-table">
+      <div class="lx-tools">
+        <h2 class="lx-h2">22 縣市預測總表</h2>
+        <input id="lx-search" type="search" placeholder="搜尋縣市或候選人" aria-label="搜尋縣市或候選人">
+      </div>
+      <div class="lx-filters" id="lx-filters" role="group" aria-label="篩選">
+        <button class="lx-filter" data-f="all" aria-pressed="true">全部</button>
+        <button class="lx-filter" data-f="close" aria-pressed="false">勝負難料</button>
+        <button class="lx-filter" data-f="藍" aria-pressed="false">藍營領先</button>
+        <button class="lx-filter" data-f="白" aria-pressed="false">白營領先</button>
+        <button class="lx-filter" data-f="綠" aria-pressed="false">綠營領先</button>
+      </div>
+      <p class="lx-note">框起來並打勾的是預測勝選者（花蓮、金門、連江的無黨籍候選人在縣市明細）。得票率＝得票數 ÷ 有效票；催票率＝得票數 ÷ 選舉人數。點欄位標題排序，點一列看縣市明細。</p>
+      <div class="lx-scroll">
+        <table id="lx-main" data-source="counties" data-row-key="id">
+          <thead><tr>
+            <th class="lx-l lx-sticky" data-field="county"><button data-sort="order">縣市</button></th>
+            <th class="lx-l" data-field="rating"><button data-sort="leader_win">選情</button></th>
+            <th data-field="leader_win"><button data-sort="leader_win">勝率</button></th>
+            <th data-field="turnout"><button data-sort="turnout">投票率</button></th>
+            <th class="lx-l lx-gb lx-sep" data-field="bw_name">藍白營候選人</th>
+            <th class="lx-gb" data-field="bw_votes"><button data-sort="bw_votes">得票數</button></th>
+            <th class="lx-gb" data-field="bw_share"><button data-sort="bw_share">得票率</button></th>
+            <th class="lx-gb" data-field="bw_mobil"><button data-sort="bw_mobil">催票率</button></th>
+            <th class="lx-l lx-gg lx-sep" data-field="g_name">綠營候選人</th>
+            <th class="lx-gg" data-field="g_votes"><button data-sort="g_votes">得票數</button></th>
+            <th class="lx-gg" data-field="g_share"><button data-sort="g_share">得票率</button></th>
+            <th class="lx-gg" data-field="g_mobil"><button data-sort="g_mobil">催票率</button></th>
+            <th class="lx-sep" data-source="delta" data-field="d_g">綠營週變化</th>
+            <th class="lx-wrap" data-field="note">備註</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 縣市明細 -->
+  <section class="lx-page" id="county" hidden>
+    <div class="lx-detail-head">
+      <div style="display:grid;gap:6px">
+        <h2 class="lx-detail-title" id="lx-d-title">—</h2>
+        <span id="lx-d-rating"></span>
+      </div>
+      <label class="lx-pill" for="lx-county">切換縣市 <select id="lx-county" data-source="counties"></select></label>
+    </div>
+    <div class="lx-card" id="card-county-summary">
+      <div class="lx-facts">
+        <div class="lx-fact"><span>選舉人數（估）</span><span class="lx-num" id="lx-d-elect" data-source="counties" data-field="electorate">—</span></div>
+        <div class="lx-fact"><span>預估投票率</span><span class="lx-num" id="lx-d-turn" data-source="counties" data-field="turnout">—</span></div>
+        <div class="lx-fact"><span>預估投票數</span><span class="lx-num" id="lx-d-votes" data-source="counties" data-field="votes">—</span></div>
+        <div class="lx-fact"><span>預估有效票</span><span class="lx-num" id="lx-d-valid" data-source="counties" data-field="valid">—</span></div>
+        <div class="lx-fact"><span>人口</span><span class="lx-num" id="lx-d-pop" data-source="counties" data-field="population">—</span></div>
+      </div>
+      <p class="lx-note">投票率合理區間 <span class="lx-num" id="lx-d-turn-lo" data-source="counties" data-field="turnout_lo">—</span> 至 <span class="lx-num" id="lx-d-turn-hi" data-source="counties" data-field="turnout_hi">—</span></p>
+      <div class="lx-probbar" id="lx-d-prob" data-source="counties"></div>
+    </div>
+    <div class="lx-card" id="card-county-cands">
+      <div class="lx-card-head"><h2 class="lx-h2">候選人預測</h2><span class="lx-note">區間為 80% 可能範圍</span></div>
+      <div class="lx-scroll" style="max-height:none">
+        <table id="lx-cands" data-source="candidates" data-row-key="id">
+          <thead><tr>
+            <th class="lx-l" data-field="name">候選人</th>
+            <th class="lx-l" data-field="party">政黨</th>
+            <th class="lx-l" data-field="camp">陣營</th>
+            <th data-field="votes">得票數</th>
+            <th data-field="share">得票率</th>
+            <th class="lx-l lx-hide-sm" data-field="share_lo">80% 區間</th>
+            <th data-field="mobil">催票率</th>
+            <th data-field="win">勝率</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="lx-grid2">
+      <div class="lx-card" id="card-county-why">
+        <h2 class="lx-h2">這個數字怎麼來</h2>
+        <dl class="lx-break">
+          <dt>結構基本盤（綠營兩陣營占比）</dt><dd id="lx-d-base" data-source="counties" data-field="base_g">—</dd>
+          <dt>民調加權平均（已修正機構偏差）</dt><dd id="lx-d-poll" data-source="counties" data-field="poll_g">—</dd>
+          <dt>民調權重</dt><dd id="lx-d-pw" data-source="counties" data-field="poll_weight">—</dd>
+          <dt>民調充足度</dt><dd id="lx-d-pc" data-source="counties" data-field="poll_class">—</dd>
+          <dt>風向修正（套用於結構盤）</dt><dd id="lx-d-env" data-source="counties" data-field="env">—</dd>
+        </dl>
+        <div class="lx-note"><b>個別調整：</b><span id="lx-d-adj" data-source="counties" data-field="adj_note">—</span></div>
+        <p class="lx-note" id="lx-d-note" data-source="counties" data-field="note" style="line-height:1.75">—</p>
+      </div>
+      <div class="lx-card" id="card-county-trend">
+        <div class="lx-card-head"><h2 class="lx-h2">歷次預測得票率</h2><span class="lx-note">每週一新增一期</span></div>
+        <div class="lx-chart" id="lx-d-trend" data-source="candidates"></div>
+      </div>
+    </div>
+    <div class="lx-card" id="card-county-polls">
+      <h2 class="lx-h2">本縣市採計的民調</h2>
+      <div class="lx-scroll" style="max-height:none">
+        <table id="lx-d-polls" data-source="polls" data-row-key="id">
+          <thead><tr>
+            <th class="lx-l" data-field="pollster">機構</th>
+            <th class="lx-l" data-field="date">調查日</th>
+            <th class="lx-l" data-field="support">支持度</th>
+            <th data-field="undecided">未表態</th>
+            <th data-field="g_two">綠營占比（修正後）</th>
+            <th data-field="weight">權重</th>
+            <th class="lx-l" data-field="source">來源</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 歷史 -->
+  <section class="lx-page" id="history" hidden>
+    <div class="lx-card" id="card-hist-seats">
+      <div class="lx-card-head"><h2 class="lx-h2">各期期望席次</h2><span class="lx-note">期望席次＝各縣市該陣營勝率加總；每期發布後凍結</span></div>
+      <div class="lx-chart" id="lx-h-seats" data-source="seats"></div>
+    </div>
+    <div class="lx-card" id="card-hist-table">
+      <h2 class="lx-h2">各期摘要</h2>
+      <div class="lx-scroll">
+        <table id="lx-h-table" data-source="seats" data-row-key="week">
+          <thead><tr>
+            <th class="lx-l" data-field="week">發布日</th>
+            <th data-field="kmt_seats">藍營</th>
+            <th data-field="tpp_seats">白營</th>
+            <th data-field="g_seats">綠營</th>
+            <th data-field="o_seats">其他</th>
+            <th data-field="kmt_exp">藍營期望</th>
+            <th data-field="tpp_exp">白營期望</th>
+            <th data-field="g_exp">綠營期望</th>
+            <th data-field="close">勝負難料</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <ul class="lx-list" id="lx-h-summary" data-source="weeks"></ul>
+    </div>
+  </section>
+
+  <!-- 民調 -->
+  <section class="lx-page" id="polls" hidden>
+    <div class="lx-card" id="card-polls">
+      <div class="lx-tools">
+        <h2 class="lx-h2">民調資料庫</h2>
+        <input id="lx-poll-search" type="search" placeholder="搜尋縣市或機構" aria-label="搜尋縣市或機構">
+      </div>
+      <p class="lx-note">權重為該民調在所屬縣市民調平均中的占比；權重 0 表示未採計（TVBS 非封關民調，或超過採計期限）。</p>
+      <div class="lx-scroll">
+        <table id="lx-polls" data-source="polls" data-row-key="id">
+          <thead><tr>
+            <th class="lx-l lx-sticky" data-field="county">縣市</th>
+            <th class="lx-l" data-field="pollster">機構</th>
+            <th class="lx-l" data-field="date">調查日</th>
+            <th data-field="tier">機構權重</th>
+            <th data-field="house">機構偏差修正</th>
+            <th class="lx-l" data-field="support">支持度</th>
+            <th data-field="undecided">未表態</th>
+            <th data-field="g_two">綠營占比（修正後）</th>
+            <th data-field="weight">縣市內權重</th>
+            <th class="lx-l" data-field="source">來源</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 方法 -->
+  <section class="lx-page" id="method" hidden>
+    <div class="lx-card lx-prose" id="card-method">
+      <h2 class="lx-h2">預測方法</h2>
+      <p>每週一更新一期；每一期發布後凍結，不回頭修改，方便日後與開票結果對照。選後會加上實際結果與各期誤差。</p>
+      <h3>名詞</h3>
+      <ul>
+        <li><b>得票率</b>：得票數 ÷ 有效票數。</li>
+        <li><b>催票率</b>：得票數 ÷ 選舉人數，反映實際動員到的選民比例。</li>
+        <li><b>選舉人數</b>：中選會選前三天才公告，在那之前取 2022 年選舉人數 ×1.02 與 2024 總統選舉人數 ×1.005 的平均。</li>
+        <li><b>陣營歸類</b>：藍白營包含國民黨、民眾黨，以及兩黨正式推薦或支持的無黨籍（如新竹市高虹安、嘉義縣吳品叡）。席次再拆成藍營與白營：白營為民眾黨或民眾黨出身、藍白共推者（嘉義市張啓楷、新竹市高虹安）。其他無黨籍列為「其他」。</li>
+        <li><b>版圖人口</b>：各陣營預測領先縣市的人口加總，人口取內政部戶政司 2026 年 9 月底戶口統計速報。</li>
+      </ul>
+      <h3>六個步驟</h3>
+      <ul>
+        <li><b>結構基本盤</b>：2022 縣市長 40%、2024 總統 30%、2024 區域立委 30%，算出綠營在兩陣營中的占比。立委部分以民進黨得票占全部有效票計算，無黨籍視為非綠（台東劉櫂豪 2024 以無黨籍參選，現為陳瑩競總總幹事，其得票以 75% 計入綠營）。民眾黨選票（2024 柯文哲、2024 民眾黨立委、2022 民眾黨縣市長候選人）以 75% 轉給藍白、25% 計入綠營。台北 2022 不把黃珊珊的得票算入藍白；嘉義市 2022 為黃敏惠個人票加延後重選，不列入。</li>
+        <li><b>民調整合</b>：採計近 12 週的民調（沒有近期民調的縣市回溯 32 週），半衰期 14 天，再乘上樣本數平方根。機構權重：戴立安（信民協會，以及他在職期間的美麗島電子報）×1.5、震傳媒（山水民意）×1.2、其他 ×0.7；TVBS 只採封關民調。未表態依該份民調已表態者的比例分配；機構自行公布推估得票率時，優先採用。</li>
+        <li><b>機構偏差</b>：依委託立場與過往表現修正綠藍差距，例如新台灣國策智庫 −6、國民黨委託民調 +4 到 +5（需驗證）。</li>
+        <li><b>混合</b>：近 6 週有 3 份以上民調的縣市，民調占 80%；有民調但較少的占 60%；幾乎沒有民調的占 30%。</li>
+        <li><b>環境修正</b>：風向由「有民調縣市的民調減結構盤」加權平均推得，只套用在結構盤部分。上限：北北基桃與五都 ±7.5、其餘縣市 ±5。近 12 週沒有民調的縣市，沒有直接證據顯示風向外溢，改用民進黨自估的外溢幅度 +2.5。現任者 +1.5；滿意度 ±1.5 以內；輿論（含兩黨內部評估、重大事件）合計 ±1.5 以內；黨內分裂與派系不支持個別評估，不受 ±1.5 限制（目前只有新竹縣 +3，需驗證）。逐項寫在明細。</li>
+        <li><b>不確定性</b>：蒙地卡羅模擬 20,000 次，含全國共同誤差（標準差 1.5）與縣市誤差（民調多 4、少 5.5、幾乎沒有 6.5，再加上民調之間的分歧）。</li>
+      </ul>
+      <h3>選情分級</h3>
+      <p>領先者勝率：穩（90% 以上）、傾向（75% 至 90%）、微幅（60% 至 75%）、拉鋸（60% 以下）。</p>
+      <h3>投票率</h3>
+      <p>以各縣市 2022 年投票率為基準（嘉義市 2022 年延後重選、投票率特低，改用 63%，需驗證），全國動員氛圍 +2，拉鋸 +2.5、微幅 +1.5、傾向 +0.5；區間 ±3 個百分點。11/28 同日舉行核電公投（第 22 案），對投票率的影響需驗證。</p>
+      <h3>修正紀錄</h3>
+      <ul>
+        <li>10/23 第 1 期修正：原版把未表態依 2022 年結構盤分配、風向上限 ±3，系統性偏藍，與最新民調和兩黨內部評估矛盾（台北、新竹縣、基隆、嘉義市、宜蘭）；另把北部風向套到沒有民調的雲林，造成雲林誤判為拉鋸。已改為上述規則並取代原版。</li>
+        <li>10/23 第二次修正：程式原本把 2024 柯文哲與民眾黨的選票 100% 算成藍白，未依約定的 75% 轉移率，22 縣市結構盤都偏藍 1.6 到 7.6 個百分點，已修正；台東加計劉櫂豪的綠營票；花蓮依綠營議員集中支持張峻、內參差距接近，調整三強得票。</li>
+        <li>10/23 第三次修正：新竹縣加入藍營分裂的派系調整（徐欣瑩與陳見賢交惡、竹北藍白合破局），鄭朝方轉為小幅領先；席次拆分藍營與白營；新增版圖人口。</li>
+      </ul>
+      <h3>限制</h3>
+      <ul>
+        <li>多數縣市公開民調稀少，部分縣市（苗栗、南投、屏東、嘉義縣、連江）完全沒有對決民調，主要靠結構盤推估。</li>
+        <li>機構偏差數值是判斷，不是統計估計。</li>
+        <li>依《公職人員選舉罷免法》第 53 條，投票日前十天（11/18 起）不得發布、報導、散布、評論或引述民調資料。11/18 之後的版本請勿公開分享。</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  const C = { B: 'var(--lx-kmt)', W: 'var(--lx-tpp)', G: 'var(--lx-dpp)', O: 'var(--lx-oth)' };
+  const CAMP = { '藍': 'B', '白': 'W', '綠': 'G', '其他': 'O' };
+  const CAMP_NAME = { B: '藍營', W: '白營', G: '綠營', O: '其他' };
+  const BLOC = { '藍白': 'B', '綠': 'G', '其他': 'O' };
+  const pct = d3.format('.1%');
+  const pct0 = d3.format('.0%');
+  const int = d3.format(',');
+  const wan = (v) => (v / 10000).toFixed(1);
+  const sgn = (v) => (v > 0 ? '+' : v < 0 ? '−' : '±') + Math.abs(v * 100).toFixed(1);
+  const ABBR = { '新竹市': '竹市', '新竹縣': '竹縣', '嘉義市': '嘉市', '嘉義縣': '嘉縣' };
+  const short = (c) => ABBR[c] || c.replace('臺', '台').replace(/[市縣]$/, '');
+  const full = (c) => c.replace('臺', '台');
+  const enc = (s) => encodeURIComponent(s);
+  // 方格地圖：[欄, 列, 跨欄, 跨列]；第 1 欄金馬、第 3 欄澎湖、第 5–8 欄本島（西岸在第 5 欄）
+  const TILE = {
+    '連江縣': [1, 1], '金門縣': [1, 4], '澎湖縣': [3, 7],
+    '臺北市': [7, 1], '基隆市': [8, 1],
+    '桃園市': [6, 2], '新北市': [7, 2, 2],
+    '新竹市': [5, 3], '新竹縣': [6, 3], '宜蘭縣': [7, 3, 2],
+    '苗栗縣': [5, 4, 2], '花蓮縣': [7, 4, 2, 3],
+    '臺中市': [5, 5, 2],
+    '彰化縣': [5, 6], '南投縣': [6, 6],
+    '雲林縣': [5, 7, 2], '臺東縣': [7, 7, 1, 3],
+    '嘉義市': [5, 8], '嘉義縣': [6, 8],
+    '臺南市': [5, 9], '高雄市': [6, 9],
+    '屏東縣': [6, 10]
+  };
+  const STRENGTH = { '穩': 1, '傾向': .72, '微幅': .45, '拉鋸': .24 };
+  window.lxState = window.lxState || { page: 'overview', county: '臺北市', sort: { key: 'order', dir: 1 }, q: '', pq: '', f: 'all' };
+  const S = window.lxState;
+
+  dash.calc('seats', {
+    title: '各期席次與版圖人口',
+    description: '每期各陣營（藍營、白營、綠營、其他）領先席次、期望席次（勝率加總）、與上一期相比的期望席次變化、領先縣市人口加總與占比，以及領先者勝率低於 75% 的縣市數。',
+    inputs: ['counties'],
+    fn: (counties) => {
+      const by = d3.group(counties, (r) => r.week);
+      return Array.from(by, ([week, rs]) => {
+        const total = d3.sum(rs, (r) => r.population);
+        const popOf = (camp) => d3.sum(rs.filter((r) => r.leader_camp === camp), (r) => r.population);
+        return {
+          week,
+          kmt_seats: rs.filter((r) => r.leader_camp === '藍').length,
+          tpp_seats: rs.filter((r) => r.leader_camp === '白').length,
+          g_seats: rs.filter((r) => r.leader_camp === '綠').length,
+          o_seats: rs.filter((r) => r.leader_camp === '其他').length,
+          kmt_exp: Math.round(d3.sum(rs, (r) => (r.bw_camp === '白' ? 0 : r.win_bw)) * 10) / 10,
+          tpp_exp: Math.round(d3.sum(rs, (r) => (r.bw_camp === '白' ? r.win_bw : 0)) * 10) / 10,
+          g_exp: Math.round(d3.sum(rs, (r) => r.win_g) * 10) / 10,
+          o_exp: Math.round(d3.sum(rs, (r) => r.win_other) * 10) / 10,
+          kmt_pop: popOf('藍'), tpp_pop: popOf('白'), g_pop: popOf('綠'), o_pop: popOf('其他'),
+          kmt_pop_share: Math.round(popOf('藍') / total * 1000) / 1000,
+          tpp_pop_share: Math.round(popOf('白') / total * 1000) / 1000,
+          g_pop_share: Math.round(popOf('綠') / total * 1000) / 1000,
+          o_pop_share: Math.round(popOf('其他') / total * 1000) / 1000,
+          close: rs.filter((r) => r.leader_win < 0.75).length
+        };
+      }).sort((a, b) => d3.ascending(a.week, b.week))
+        .map((r, i, all) => ({
+          ...r,
+          d_kmt_exp: i ? Math.round((r.kmt_exp - all[i - 1].kmt_exp) * 10) / 10 : null,
+          d_tpp_exp: i ? Math.round((r.tpp_exp - all[i - 1].tpp_exp) * 10) / 10 : null,
+          d_g_exp: i ? Math.round((r.g_exp - all[i - 1].g_exp) * 10) / 10 : null
+        }));
+    }
+  });
+
+  dash.calc('delta', {
+    title: '與上一期相比',
+    description: '各縣市本期與上一期的綠營、藍白營得票率差，以及領先者是否易主；第一期無上一期可比。',
+    inputs: ['counties'],
+    fn: (counties) => {
+      const weeks = Array.from(new Set(counties.map((r) => r.week))).sort();
+      const idx = new Map(counties.map((r) => [r.week + '|' + r.county, r]));
+      return counties.map((r) => {
+        const prevWeek = weeks[weeks.indexOf(r.week) - 1];
+        const p = prevWeek ? idx.get(prevWeek + '|' + r.county) : null;
+        return {
+          id: r.id, week: r.week, county: r.county,
+          d_g: p ? Math.round((r.g_share - p.g_share) * 10000) / 10000 : null,
+          d_bw: p ? Math.round((r.bw_share - p.bw_share) * 10000) / 10000 : null,
+          d_turnout: p ? Math.round((r.turnout - p.turnout) * 10000) / 10000 : null,
+          prev_leader: p ? p.leader : null,
+          leader_changed: p ? p.leader !== r.leader : false
+        };
+      });
+    }
+  });
+
+  const $ = (id) => document.getElementById(id);
+  const tip = document.createElement('div');
+  tip.className = 'lx-tip'; tip.hidden = true;
+
+  function failed(e) { e.replaceChildren(); const d = document.createElement('div'); d.className = 'lx-fail'; d.textContent = 'Failed to load'; e.append(d); }
+  function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function chip(text, k, solid) { const s = el('span', 'lx-chip' + (solid ? ' is-solid' : ''), text); s.style.setProperty('--k', C[k]); return s; }
+  function winTag(text, k) { const s = el('span', 'lx-win', text); s.style.setProperty('--k', C[k]); return s; }
+  function campTag(camp) { const s = el('span', 'lx-camp', camp); s.style.setProperty('--k', C[CAMP[camp]]); return s; }
+  function td(content, cls) { const t = el('td', cls); if (content instanceof Node) t.append(content); else t.textContent = content; return t; }
+  function mark(e, src, field, where) { e.dataset.source = src; e.dataset.field = field; if (where) e.dataset.where = where; else delete e.dataset.where; }
+  const fill = (k, strength) => `color-mix(in srgb, ${C[k]} ${Math.round(strength * 100)}%, var(--color-panel))`;
+
+  function show(page) {
+    S.page = page;
+    document.querySelectorAll('.lx-tab').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.page === page)));
+    document.querySelectorAll('.lx-page').forEach((p) => { p.hidden = p.id !== page; });
+    dash.setLink(page);
+    draw();
+  }
+  document.querySelectorAll('.lx-tab').forEach((b) => b.addEventListener('click', () => show(b.dataset.page)));
+  // 儀表板的捲動容器不一定是 window，改用 scrollIntoView 讓分頁列回到畫面頂端
+  function toTop() {
+    const nav = document.querySelector('.lx-tabs');
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      nav.scrollIntoView({ block: 'start', behavior: 'auto' });
+      window.scrollTo?.(0, 0);
+    }));
+  }
+  function openCounty(c) { S.county = c; show('county'); toTop(); }
+
+  $('lx-week').addEventListener('change', (e) => dash.setParams({ week: e.target.value || null }));
+  $('lx-county').addEventListener('change', (e) => { S.county = e.target.value; draw(); });
+  $('lx-search').addEventListener('input', (e) => { S.q = e.target.value.trim(); draw(); });
+  $('lx-poll-search').addEventListener('input', (e) => { S.pq = e.target.value.trim(); draw(); });
+  document.querySelectorAll('#lx-filters .lx-filter').forEach((b) => b.addEventListener('click', () => {
+    S.f = b.dataset.f;
+    document.querySelectorAll('#lx-filters .lx-filter').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    draw();
+  }));
+  document.querySelectorAll('#lx-main th button').forEach((b) => b.addEventListener('click', () => {
+    const k = b.dataset.sort;
+    S.sort = { key: k, dir: S.sort.key === k ? -S.sort.dir : (k === 'order' ? 1 : -1) };
+    draw();
+  }));
+
+  const root = document.querySelector('.lx');
+  function setMode(m) {
+    S.mode = m;
+    root.dataset.mode = m;
+    document.querySelectorAll('.lx-mode button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === m)));
+    draw();
+  }
+  document.querySelectorAll('.lx-mode button').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode)));
+  let ctx = null;
+  function draw() { if (ctx) render(ctx); }
+  setMode(S.mode === 'dark' ? 'dark' : 'light');
+
+  dash.onData(() => {
+    const W = dash.data('weeks'), K = dash.data('counties'), N = dash.data('candidates'), P = dash.data('polls');
+    const SE = dash.data('seats'), D = dash.data('delta');
+    const all = [W, K, N, P, SE, D];
+    if (!all.every((x) => x.status === 'ok')) {
+      if (all.some((x) => x.status === 'error' || x.status === 'missing')) ['lx-map', 'lx-seatbar'].forEach((id) => failed($(id)));
+      return;
+    }
+    document.querySelectorAll('.dash-skeleton').forEach((e) => e.classList.remove('dash-skeleton'));
+    const weeks = W.data.slice().sort((a, b) => d3.ascending(a.week, b.week));
+    const latest = weeks[weeks.length - 1].week;
+    const pw = dash.params().week;
+    const week = pw && weeks.some((w) => w.week === pw) ? pw : latest;
+    ctx = { weeks, week, counties: K.data, cands: N.data, polls: P.data, seats: SE.data, delta: D.data };
+    render(ctx);
+  });
+
+  function render(x) {
+    const { weeks, week } = x;
+    const rows = x.counties.filter((r) => r.week === week).sort((a, b) => a.order - b.order);
+    const seat = x.seats.find((s) => s.week === week);
+    const winfo = weeks.find((w) => w.week === week);
+    const wq = 'week=' + enc(week);
+
+    const sel = $('lx-week');
+    sel.replaceChildren(...weeks.slice().reverse().map((w) => new Option(w.label + '・' + w.week.slice(5).replace('-', '/'), w.week)));
+    sel.value = week;
+    const days = $('lx-days'); days.textContent = winfo.days_to_election; mark(days, 'weeks', 'days_to_election', wq);
+
+    const tk = $('lx-takeaway'); tk.replaceChildren();
+    const num = (f) => { const b = el('b', 'lx-num', String(seat[f])); mark(b, 'seats', f, wq); return b; };
+    tk.append('本期預測：藍營領先 ', num('kmt_seats'), ' 席、白營 ', num('tpp_seats'), ' 席、綠營 ', num('g_seats'), ' 席、其他 ', num('o_seats'), ' 席；其中 ', num('close'), ' 個縣市勝負仍難料。');
+
+    if (S.page === 'overview') renderOverview(x, rows, seat, wq);
+    if (S.page === 'county') renderCounty(x, rows);
+    if (S.page === 'history') renderHistory(x);
+    if (S.page === 'polls') renderPolls(x);
+  }
+
+  function legend(target, withStrength) {
+    const items = [['藍營', 'B'], ['白營', 'W'], ['綠營', 'G'], ['其他', 'O']].map(([n, k]) => { const s = el('span'); const i = el('i', 'lx-sw'); i.style.background = C[k]; s.append(i, n); return s; });
+    if (withStrength) items.push(...['穩', '傾向', '微幅', '拉鋸'].map((r) => { const s = el('span'); const i = el('i', 'lx-sw'); i.style.background = fill('O', STRENGTH[r]); i.style.border = '1px solid ' + C.O; s.append(i, r); return s; }));
+    target.replaceChildren(...items);
+  }
+
+  function renderOverview(x, rows, seat, wq) {
+    [['kmt_seats', 'kpi-kmt-val'], ['tpp_seats', 'kpi-tpp-val'], ['g_seats', 'kpi-g-val'], ['o_seats', 'kpi-o-val'], ['close', 'kpi-close-val']].forEach(([f, id]) => { const e = $(id); e.textContent = seat[f]; mark(e, 'seats', f, wq); });
+    [['kmt_exp', 'kpi-kmt-exp'], ['tpp_exp', 'kpi-tpp-exp'], ['g_exp', 'kpi-g-exp'], ['o_exp', 'kpi-o-exp']].forEach(([f, id]) => { const e = $(id); e.textContent = seat[f].toFixed(1); mark(e, 'seats', f, wq); });
+    [['d_kmt_exp', 'kpi-kmt-d'], ['d_tpp_exp', 'kpi-tpp-d'], ['d_g_exp', 'kpi-g-d']].forEach(([f, id]) => {
+      const e = $(id); e.replaceChildren();
+      if (seat[f] == null) { e.textContent = '・首期'; return; }
+      const v = el('span', 'lx-num', (seat[f] > 0 ? '+' : seat[f] < 0 ? '−' : '±') + Math.abs(seat[f]).toFixed(1));
+      mark(v, 'seats', f, wq); e.append('・較上期 ', v);
+    });
+    legend($('lx-legend-top'), false);
+
+    // 席次條：藍（白營依勝率排入藍營，保留白營色）→ 其他 → 綠，藍依勝率由高到低、綠依勝率由低到高
+    const ORDER = { '藍': 0, '白': 0, '其他': 2, '綠': 3 };
+    const sb = $('lx-seatbar');
+    sb.replaceChildren(...rows.slice().sort((a, b) => ORDER[a.leader_camp] - ORDER[b.leader_camp] || (ORDER[a.leader_camp] < 3 ? b.leader_win - a.leader_win : a.leader_win - b.leader_win)).map((r) => {
+      const k = CAMP[r.leader_camp], st = STRENGTH[r.rating];
+      const b = el('button', 'lx-seat' + (st < .7 ? ' is-light' : ''), short(r.county));
+      b.style.background = fill(k, st); b.style.borderColor = C[k];
+      b.setAttribute('aria-label', `${r.county} ${r.leader} ${pct(r.leader_share)}`);
+      b.addEventListener('click', () => openCounty(r.county));
+      b.addEventListener('mousemove', (ev) => showTip(ev, sb.parentElement, r.county, [[r.leader, r.leader_share, k]], r.rating + '・勝率 ' + pct0(r.leader_win)));
+      b.addEventListener('mouseleave', hideTip);
+      return b;
+    }));
+
+    // 版圖人口
+    [['kmt_pop', 'pop-kmt'], ['tpp_pop', 'pop-tpp'], ['g_pop', 'pop-g'], ['o_pop', 'pop-o']].forEach(([f, id]) => { const e = $(id); e.textContent = wan(seat[f]); mark(e, 'seats', f, wq); });
+    [['kmt_pop_share', 'pop-kmt-s'], ['tpp_pop_share', 'pop-tpp-s'], ['g_pop_share', 'pop-g-s'], ['o_pop_share', 'pop-o-s']].forEach(([f, id]) => { const e = $(id); e.textContent = '占全國 ' + pct(seat[f]); mark(e, 'seats', f, wq); });
+    const pb = $('lx-popbar');
+    pb.replaceChildren(...[['藍營', 'kmt_pop_share', 'B'], ['白營', 'tpp_pop_share', 'W'], ['其他', 'o_pop_share', 'O'], ['綠營', 'g_pop_share', 'G']].filter(([, f]) => seat[f] > 0).map(([n, f, k]) => {
+      const d = el('div', null, seat[f] > 0.08 ? n + ' ' + pct(seat[f]) : '');
+      d.style.width = (seat[f] * 100) + '%'; d.style.background = C[k]; d.title = n + ' ' + pct(seat[f]);
+      mark(d, 'seats', f, wq); return d;
+    }));
+
+    // 方格地圖
+    const map = $('lx-map'); map.replaceChildren();
+    const strait = el('div', 'lx-strait', '台灣海峽'); strait.style.gridColumn = '2'; strait.style.gridRow = '3 / span 5'; strait.setAttribute('aria-hidden', 'true'); map.append(strait);
+    rows.forEach((r) => {
+      const p = TILE[r.county]; if (!p) return;
+      const k = CAMP[r.leader_camp], st = STRENGTH[r.rating];
+      const t = el('button', 'lx-tile' + (st >= .7 ? ' is-solid' : ''));
+      t.style.gridColumn = `${p[0]} / span ${p[2] || 1}`; t.style.gridRow = `${p[1]} / span ${p[3] || 1}`;
+      t.style.background = fill(k, st); if (st < .7) t.style.borderColor = C[k];
+      t.append(el('b', null, short(r.county)), el('small', null, r.leader), el('small', 'lx-tile-pct', pct(r.leader_share)));
+      t.setAttribute('aria-label', `${r.county}：${r.leader}（${CAMP_NAME[k]}）預測得票率 ${pct(r.leader_share)}，${r.rating}`);
+      t.addEventListener('click', () => openCounty(r.county));
+      t.addEventListener('mousemove', (ev) => showTip(ev, map.parentElement, r.county, [[r.bw_name, r.bw_share, CAMP[r.bw_camp] || 'B'], [r.g_name, r.g_share, 'G']].filter((z) => z[0] !== '未提名' && z[1] > 0), r.rating + '・領先者勝率 ' + pct0(r.leader_win)));
+      t.addEventListener('mouseleave', hideTip);
+      map.append(t);
+    });
+    legend($('lx-map-legend'), true);
+
+    // 關鍵戰區
+    const close = rows.filter((r) => r.leader_win < 0.75).sort((a, b) => a.leader_win - b.leader_win);
+    $('lx-close').replaceChildren(...close.map((r) => {
+      const li = el('li'); const k = CAMP[r.leader_camp];
+      const body = el('span');
+      body.append(chip(r.rating, k, false), ' ', el('b', null, r.leader), ` ${pct(r.leader_share)}，勝率 ${pct0(r.leader_win)}`);
+      li.append(el('b', null, full(r.county)), body); li.style.cursor = 'pointer'; li.addEventListener('click', () => openCounty(r.county));
+      return li;
+    }));
+
+    // 本期變化
+    const deltas = new Map(x.delta.filter((d) => d.week === x.week).map((d) => [d.county, d]));
+    const items = [];
+    rows.filter((r) => deltas.get(r.county)?.leader_changed).forEach((r) => items.push([full(r.county), `領先者易主：${deltas.get(r.county).prev_leader} → ${r.leader}`]));
+    rows.map((r) => [r, deltas.get(r.county)?.d_g]).filter(([, d]) => d != null && Math.abs(d) >= 0.01).sort((p, q) => Math.abs(q[1]) - Math.abs(p[1])).slice(0, 5)
+      .forEach(([r, d]) => items.push([full(r.county), `綠營得票率 ${sgn(d)} 個百分點`]));
+    if (!items.length) items.push(['首期', '本期為第一期，下期起列出與上期相比的領先易主與得票率變化。']);
+    $('lx-highlights').replaceChildren(...items.map(([a, b]) => { const li = el('li'); li.append(el('b', null, a), el('span', null, b)); return li; }));
+
+    // 總表
+    const q = S.q;
+    const list = rows.filter((r) => (!q || [r.county, r.bw_name, r.g_name, r.note].join(' ').includes(q)) &&
+      (S.f === 'all' || (S.f === 'close' ? r.leader_win < 0.75 : r.leader_camp === S.f)))
+      .sort((a, b) => S.sort.dir * d3.ascending(a[S.sort.key], b[S.sort.key]));
+    document.querySelectorAll('#lx-main th').forEach((th) => {
+      const k = th.querySelector('button')?.dataset.sort;
+      if (k && k === S.sort.key) th.setAttribute('aria-sort', S.sort.dir > 0 ? 'ascending' : 'descending'); else th.removeAttribute('aria-sort');
+    });
+    document.querySelector('#lx-main tbody').replaceChildren(...list.map((r) => {
+      const tr = el('tr', 'lx-click'); tr.dataset.key = r.id;
+      const d = deltas.get(r.county)?.d_g;
+      const k = CAMP[r.leader_camp], bwK = CAMP[r.bw_camp] || 'B';
+      const bwWin = r.leader_bloc === '藍白', gWin = r.leader_bloc === '綠';
+      const bwName = el('span');
+      bwName.append(bwWin ? winTag(r.bw_name, bwK) : document.createTextNode(r.bw_name));
+      if (r.bw_camp) bwName.append(campTag(r.bw_camp));
+      const gName = gWin ? winTag(r.g_name, 'G') : el('span', r.g_name === '未提名' ? 'lx-dim' : null, r.g_name);
+      const dEl = el('span', d == null ? 'lx-dim' : 'lx-delta ' + (d > 0 ? 'is-g' : d < 0 ? 'is-b' : ''), d == null ? '首期' : sgn(d));
+      tr.append(
+        td(full(r.county), 'lx-l lx-sticky lx-strong'),
+        td(chip(r.rating + '・' + r.leader_camp, k, STRENGTH[r.rating] >= .7), 'lx-l'),
+        td(pct0(r.leader_win)),
+        td(pct(r.turnout)),
+        td(bwName, 'lx-l lx-sep'),
+        td(r.bw_votes ? int(r.bw_votes) : '—', bwWin ? 'lx-strong' : 'lx-dim'),
+        td(r.bw_share ? pct(r.bw_share) : '—', bwWin ? 'lx-strong' : 'lx-dim'),
+        td(r.bw_mobil ? pct(r.bw_mobil) : '—', 'lx-dim'),
+        td(gName, 'lx-l lx-sep'),
+        td(r.g_votes ? int(r.g_votes) : '—', gWin ? 'lx-strong' : 'lx-dim'),
+        td(r.g_share ? pct(r.g_share) : '—', gWin ? 'lx-strong' : 'lx-dim'),
+        td(r.g_mobil ? pct(r.g_mobil) : '—', 'lx-dim'),
+        td(dEl, 'lx-sep'),
+        td(r.note, 'lx-wrap')
+      );
+      tr.addEventListener('click', () => openCounty(r.county));
+      return tr;
+    }));
+  }
+
+  function renderCounty(x, rows) {
+    const cs = $('lx-county');
+    cs.replaceChildren(...rows.map((r) => new Option(r.county, r.county)));
+    if (!rows.some((r) => r.county === S.county)) S.county = rows[0].county;
+    cs.value = S.county;
+    const r = rows.find((z) => z.county === S.county);
+    const where = 'id=' + enc(r.id);
+    const k = CAMP[r.leader_camp];
+    $('lx-d-title').textContent = r.county;
+    $('lx-d-rating').replaceChildren(chip(`${r.rating}・${r.leader} 領先，勝率 ${pct0(r.leader_win)}`, k, true));
+    const set = (id, f, txt) => { const e = $(id); e.textContent = txt; mark(e, 'counties', f, where); };
+    set('lx-d-elect', 'electorate', int(r.electorate));
+    set('lx-d-turn', 'turnout', pct(r.turnout));
+    set('lx-d-votes', 'votes', int(r.votes));
+    set('lx-d-valid', 'valid', int(r.valid));
+    set('lx-d-pop', 'population', int(r.population));
+    set('lx-d-turn-lo', 'turnout_lo', pct(r.turnout_lo));
+    set('lx-d-turn-hi', 'turnout_hi', pct(r.turnout_hi));
+    set('lx-d-base', 'base_g', pct(r.base_g));
+    set('lx-d-poll', 'poll_g', r.poll_g == null ? '無可用民調' : pct(r.poll_g));
+    set('lx-d-pw', 'poll_weight', pct0(r.poll_weight));
+    set('lx-d-pc', 'poll_class', r.poll_class);
+    set('lx-d-env', 'env', sgn(r.env) + ' 個百分點');
+    set('lx-d-adj', 'adj_note', r.adj_note || '無');
+    set('lx-d-note', 'note', r.note);
+
+    const bwK = CAMP[r.bw_camp] || 'B';
+    $('lx-d-prob').replaceChildren(...[[CAMP_NAME[bwK], r.win_bw, bwK, 'win_bw'], ['綠營', r.win_g, 'G', 'win_g'], ['其他', r.win_other, 'O', 'win_other']].filter((z) => z[1] > 0.005).map(([n, v, kk, f]) => {
+      const d = el('div', null, v > 0.12 ? `${n}勝率 ${pct0(v)}` : '');
+      d.style.width = (v * 100) + '%'; d.style.background = C[kk]; d.title = n + ' ' + pct(v); mark(d, 'counties', f, where); return d;
+    }));
+
+    const cands = x.cands.filter((c) => c.week === x.week && c.county === r.county).sort((a, b) => b.share - a.share);
+    const max = d3.max(cands, (c) => c.share_hi) || 1;
+    document.querySelector('#lx-cands tbody').replaceChildren(...cands.map((c) => {
+      const tr = el('tr'); tr.dataset.key = c.id;
+      const kk = CAMP[c.camp] || BLOC[c.bloc];
+      const isWin = c.name === r.leader;
+      if (isWin) tr.className = 'lx-winrow';
+      const rg = el('span', 'lx-range');
+      const i = el('i'); i.style.left = (c.share_lo / max * 100) + '%'; i.style.width = ((c.share_hi - c.share_lo) / max * 100) + '%'; i.style.background = C[kk];
+      const bm = el('b'); bm.style.left = (c.share / max * 100) + '%'; bm.style.background = C[kk];
+      rg.append(i, bm);
+      const range = el('span'); range.append(rg, ' ' + pct(c.share_lo) + '–' + pct(c.share_hi));
+      const nm = c.name + (c.incumbent ? '（現任）' : '');
+      tr.append(td(isWin ? winTag(nm, kk) : nm, 'lx-l'), td(c.party, 'lx-l'), td(chip(c.camp, kk), 'lx-l'), td(int(c.votes), isWin ? 'lx-strong' : null), td(pct(c.share), isWin ? 'lx-strong' : null), td(range, 'lx-l lx-hide-sm'), td(pct(c.mobil)), td(c.camp === '其他' && c.win < 0.005 ? '—' : pct0(c.win)));
+      return tr;
+    }));
+
+    drawLines($('lx-d-trend'), x.cands.filter((c) => c.county === r.county), (c) => c.name, (c) => c.share, (c) => CAMP[c.camp] || BLOC[c.bloc], x.weeks, pct);
+    pollRows(document.querySelector('#lx-d-polls tbody'), x.polls.filter((p) => p.week === x.week && p.county === r.county).sort((a, b) => d3.descending(a.date, b.date)), false);
+  }
+
+  function pollRows(tbody, list, withCounty) {
+    tbody.replaceChildren(...list.map((p) => {
+      const tr = el('tr'); tr.dataset.key = p.id;
+      const link = el('a');
+      if (/^https:\/\//.test(p.source)) { link.href = p.source; link.target = '_blank'; link.rel = 'noopener'; link.textContent = new URL(p.source).hostname.replace(/^www\./, ''); } else link.textContent = p.source;
+      const cells = [];
+      if (withCounty) cells.push(td(p.county, 'lx-l lx-sticky lx-strong'));
+      cells.push(td(p.pollster, 'lx-l'), td(p.date, 'lx-l'));
+      if (withCounty) cells.push(td('×' + p.tier), td(p.house ? (p.house > 0 ? '偏綠 ' : '偏藍 ') + Math.abs(p.house) : '0'));
+      cells.push(td(p.support, 'lx-l'), td(pct(p.undecided)), td(p.g_two == null ? '未採計' : pct(p.g_two), p.g_two == null ? 'lx-dim' : null), td(pct0(p.weight), p.weight ? null : 'lx-dim'), td(link, 'lx-l'));
+      tr.append(...cells);
+      return tr;
+    }));
+  }
+
+  function renderPolls(x) {
+    const q = S.pq;
+    const list = x.polls.filter((p) => p.week === x.week && (!q || (p.county + p.pollster).includes(q))).sort((a, b) => d3.ascending(a.county, b.county) || d3.descending(a.date, b.date));
+    pollRows(document.querySelector('#lx-polls tbody'), list, true);
+  }
+
+  function renderHistory(x) {
+    const s = x.seats;
+    const long = s.flatMap((r) => [
+      { week: r.week, name: '藍營', v: r.kmt_exp, k: 'B' },
+      { week: r.week, name: '白營', v: r.tpp_exp, k: 'W' },
+      { week: r.week, name: '綠營', v: r.g_exp, k: 'G' },
+      { week: r.week, name: '其他', v: r.o_exp, k: 'O' }
+    ]);
+    drawLines($('lx-h-seats'), long, (d) => d.name, (d) => d.v, (d) => d.k, x.weeks, (v) => v.toFixed(1) + ' 席');
+    document.querySelector('#lx-h-table tbody').replaceChildren(...s.slice().reverse().map((r) => {
+      const tr = el('tr'); tr.dataset.key = r.week;
+      tr.append(td(r.week, 'lx-l'), td(r.kmt_seats), td(r.tpp_seats), td(r.g_seats), td(r.o_seats), td(r.kmt_exp.toFixed(1)), td(r.tpp_exp.toFixed(1)), td(r.g_exp.toFixed(1)), td(r.close));
+      return tr;
+    }));
+    $('lx-h-summary').replaceChildren(...x.weeks.slice().reverse().map((w) => { const li = el('li'); li.append(el('b', null, w.label), el('span', null, w.week + '：' + w.summary)); return li; }));
+  }
+
+  function drawLines(box, data, nameOf, valOf, blocOf, weeks, fmt) {
+    box.replaceChildren();
+    const width = box.clientWidth || 600, height = 240;
+    const series = d3.groups(data, nameOf).map(([name, rs]) => ({ name, k: blocOf(rs[0]), pts: rs.map((r) => ({ week: r.week, v: valOf(r) })).sort((a, b) => d3.ascending(a.week, b.week)) }))
+      .filter((s) => d3.max(s.pts, (p) => p.v) > 0.004);
+    if (!series.length) return;
+    const wk = weeks.map((w) => w.week);
+    const labelW = d3.max(series, (s) => (s.name + ' ' + fmt(s.pts[s.pts.length - 1].v)).length) * 7 + 14;
+    const m = { t: 12, r: Math.min(labelW, width * 0.4), b: 26, l: 40 };
+    const xs = d3.scalePoint(wk, [m.l, width - m.r]).padding(wk.length === 1 ? 0.5 : 0.1);
+    const ymax = d3.max(series, (s) => d3.max(s.pts, (p) => p.v));
+    const ys = d3.scaleLinear([0, ymax * 1.12], [height - m.b, m.t]).nice();
+    const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${width} ${height}`).attr('height', height);
+    const isPct = fmt === pct;
+    svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(ys).ticks(4).tickSize(-(width - m.l - m.r)).tickFormat(isPct ? d3.format('.0%') : d3.format('d')))
+      .attr('font-size', null).attr('font-family', null)
+      .call((g) => g.select('.domain').remove())
+      .call((g) => g.selectAll('line').attr('stroke', 'var(--cds-chart-grid)'))
+      .call((g) => g.selectAll('text').attr('fill', 'var(--color-fg-muted)').style('font-size', 'var(--cds-font-size-caption)'));
+    svg.append('g').attr('transform', `translate(0,${height - m.b})`).call(d3.axisBottom(xs).tickSize(0).tickFormat((d) => d.slice(5).replace('-', '/')))
+      .attr('font-size', null).attr('font-family', null)
+      .call((g) => g.select('.domain').attr('stroke', 'var(--cds-chart-axis)'))
+      .call((g) => g.selectAll('text').attr('fill', 'var(--color-fg-muted)').attr('dy', '1.2em').style('font-size', 'var(--cds-font-size-caption)'));
+    const line = d3.line().x((p) => xs(p.week)).y((p) => ys(p.v));
+    const ends = [];
+    series.forEach((s) => {
+      const col = C[s.k];
+      if (s.pts.length > 1) svg.append('path').attr('d', line(s.pts)).attr('fill', 'none').attr('stroke', col).attr('stroke-width', 2).attr('stroke-linecap', 'round').attr('stroke-linejoin', 'round');
+      svg.append('g').selectAll('circle').data(s.pts).join('circle').attr('cx', (p) => xs(p.week)).attr('cy', (p) => ys(p.v)).attr('r', 4.5).attr('fill', col)
+        .on('mousemove', (ev, p) => showTip(ev, box, p.week, [[s.name, p.v, s.k]], null, fmt)).on('mouseleave', hideTip);
+      const last = s.pts[s.pts.length - 1];
+      ends.push({ s, y: ys(last.v), x: xs(last.week), v: last.v });
+    });
+    ends.sort((a, b) => a.y - b.y);
+    for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 14) ends[i].y = ends[i - 1].y + 14;
+    ends.forEach((e) => svg.append('text').attr('x', e.x + 9).attr('y', e.y).attr('dy', '0.35em').attr('fill', C[e.s.k]).style('font-size', 'var(--cds-font-size-caption)').text(e.s.name + ' ' + fmt(e.v)));
+    box.append(tip);
+  }
+
+  function showTip(ev, box, head, lines, foot, fmt) {
+    if (tip.parentElement !== box) { box.style.position = 'relative'; box.append(tip); }
+    tip.replaceChildren(el('div', 'lx-tip-h', head));
+    lines.forEach(([n, v, k]) => { const d = el('div'); const sw = el('i', 'lx-dot'); sw.style.background = C[k]; sw.style.marginRight = '6px'; d.append(sw, n + ' ' + (fmt || pct)(v)); tip.append(d); });
+    if (foot) tip.append(el('div', 'lx-tip-h', foot));
+    tip.hidden = false;
+    const br = box.getBoundingClientRect();
+    let left = ev.clientX - br.left + 12, top = ev.clientY - br.top + 12;
+    const tw = tip.offsetWidth, th = tip.offsetHeight;
+    if (left + tw > br.width) left = Math.max(0, ev.clientX - br.left - tw - 12);
+    if (top + th > br.height) top = Math.max(0, ev.clientY - br.top - th - 12);
+    tip.style.left = left + 'px'; tip.style.top = top + 'px';
+  }
+  function hideTip() { tip.hidden = true; }
+
+  const named = location.hash.slice(1);
+  if (['overview', 'county', 'history', 'polls', 'method'].includes(named)) show(named);
+})();
+</script>
+
+</div>
+<p class="lx-foot">資料與模型：<a href="https://github.com/" id="lx-repo-link">GitHub 原始碼</a>。預測為模型推估，僅供參考。</p>
+</body>
+</html>
