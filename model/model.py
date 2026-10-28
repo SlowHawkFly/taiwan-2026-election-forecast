@@ -37,17 +37,17 @@ def poll_g(c, p, gb):
 
 def poll_weight(p):
     county, org, date, n, sup, und, est, src = p
-    if org in EXCLUDE: return 0.0
+    if org in EXCLUDE or (county, org) in EXCLUDE_PAIRS: return 0.0
     age = (TODAY - dt.date.fromisoformat(date)).days
-    has_recent = any(q[0] == county and q[1] not in EXCLUDE and 0 <= (TODAY - dt.date.fromisoformat(q[2])).days <= 84 for q in POLLS)
+    has_recent = any(q[0] == county and (q[1] not in EXCLUDE and (q[0], q[1]) not in EXCLUDE_PAIRS) and 0 <= (TODAY - dt.date.fromisoformat(q[2])).days <= 84 for q in POLLS)
     if age < 0 or age > (84 if has_recent else 224): return 0.0
     tier = TIER.get(org, 0.7)
     if org == "美麗島電子報" and date >= T1_MLD_END: tier = 0.7  # 戴立安離開後的美麗島民調不再列 T1
     return tier * 0.5 ** (age / HALF_LIFE) * math.sqrt(n / 1000)
 
 def classify(c):
-    recent = [p for p in POLLS if p[0] == c and p[1] not in EXCLUDE and 0 <= (TODAY - dt.date.fromisoformat(p[2])).days <= 42]
-    older = [p for p in POLLS if p[0] == c and p[1] not in EXCLUDE and 42 < (TODAY - dt.date.fromisoformat(p[2])).days <= 84]
+    recent = [p for p in POLLS if p[0] == c and (p[1] not in EXCLUDE and (p[0], p[1]) not in EXCLUDE_PAIRS) and 0 <= (TODAY - dt.date.fromisoformat(p[2])).days <= 42]
+    older = [p for p in POLLS if p[0] == c and (p[1] not in EXCLUDE and (p[0], p[1]) not in EXCLUDE_PAIRS) and 42 < (TODAY - dt.date.fromisoformat(p[2])).days <= 84]
     if len(recent) >= 3: return "多"
     if len(recent) >= 1 or len(older) >= 1: return "少"
     return "幾乎沒有"
@@ -75,7 +75,7 @@ for mac in set(MACRO.values()):
     REG_ENV[mac] = e if e is not None else nat
 SPILL = 0.025  # 近 12 週無民調縣市：採民進黨自估的外溢幅度 +2～3 個百分點
 def has_recent_poll(c):
-    return any(p[0] == c and p[1] not in EXCLUDE and 0 <= (TODAY - dt.date.fromisoformat(p[2])).days <= 84 for p in POLLS)
+    return any(p[0] == c and (p[1] not in EXCLUDE and (p[0], p[1]) not in EXCLUDE_PAIRS) and 0 <= (TODAY - dt.date.fromisoformat(p[2])).days <= 84 for p in POLLS)
 def env_of(c):
     e = REG_ENV[MACRO[COUNTIES[c][0]]] if has_recent_poll(c) else SPILL
     cap = 0.075 if c in METRO else 0.05
