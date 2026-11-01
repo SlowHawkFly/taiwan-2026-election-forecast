@@ -98,7 +98,9 @@ for c, v in info.items():
     reg, order, e22, t22, inv22, e24, *_ = COUNTIES[c]
     cls = v["cls"]
     adjs = ADJ.get(c, [])
-    adj = sum(a for a, _, _ in adjs) / 100
+    # 派系調整是在補結構盤，依結構盤權重換算：結構盤 40% 時取原值，20% 時取一半
+    def adj_total(wp):
+        return sum(a * ((1 - wp) / 0.4 if k == "派系" else 1) for a, _, k in adjs) / 100
     cands = CANDS[c]
     # 選舉人數：(2022 選舉人數 × 1.02 與 2024 總統選舉人數 × 1.005) 平均
     elect = round((e22 * 1.02 + e24 * 1.005) / 2)
@@ -118,6 +120,7 @@ for c, v in info.items():
     else:
         wp = POLL_W[cls] if v["gp"] is not None else 0
         struct = v["gb"] + env_of(c) + inc_adj(c)
+        adj = adj_total(wp)
         gfinal = wp * (v["gp"] or 0) + (1 - wp) * struct + adj
         other = {k: s / 100 for k, s in OTHER_SHARE.get(c, {}).items()}
         rest = 1 - sum(other.values())
@@ -161,7 +164,7 @@ for c, v in info.items():
         leader_camp=("白" if leader in WHITE else "藍") if lb == "B" else {"G": "綠", "O": "其他"}[lb],
         poll_class=cls, poll_weight=round(wp, 2), n_polls=len(v["ps"]),
         base_g=round(v["gb"], 4), poll_g=None if v["gp"] is None else round(v["gp"], 4), env=round(env_of(c), 4),
-        adj_note="；".join(f"{t}（{a:+.1f}）" for a, t, k in adjs if a) or "",
+        adj_note="；".join(f"{t}（{a * ((1 - wp) / 0.4 if k == '派系' else 1):+.1f}）" for a, t, k in adjs if a) or "",
         note=NOTES.get(c, "")))
     for n, p, b, inc in cands:
         sh = shares[n]
