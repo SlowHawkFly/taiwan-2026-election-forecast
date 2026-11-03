@@ -101,6 +101,30 @@ def inc_adj(c):
 out_c, out_k, out_p = [], [], []
 NAT_SD = 0.015
 SIMS = 20000
+_trng = random.Random(20261129)   # 投票率抽樣另用一組亂數，不影響原本的抽樣順序
+turn_draws = [_trng.gauss(0, TURN_SD * 100) for _ in range(SIMS)]
+
+# 投票率的年齡結構模型：投票率每增加 1 個百分點，綠營兩黨占比的變化（turn_k）
+def _logit(p): return math.log(p / (1 - p))
+def _inv(x): return 1 / (1 + math.exp(-x))
+def age_lean(c):
+    nat = AGE_LEAN_NAT
+    if c in AGE_LEAN_POLL: return [AGE_LEAN_SHRINK * a + (1 - AGE_LEAN_SHRINK) * b for a, b in zip(AGE_LEAN_POLL[c], nat)]
+    return list(nat)
+def turnout_effect(c, T, dT):
+    # T、dT 為比例（0.62、+0.03）；回傳（新增選民的年齡傾向 A、綠營兩黨占比變化）
+    s = AGE_POP[c]; tot = sum(s); lo, hi = -5.0, 5.0
+    for _ in range(60):
+        k = (lo + hi) / 2; v = sum(si * _inv(_logit(T) + o + k) for si, o in zip(s, LOCAL_TURNOUT_OFFSET)) / tot
+        lo, hi = (k, hi) if v < T else (lo, k)
+    p0 = [_inv(_logit(T) + o + k) for o in LOCAL_TURNOUT_OFFSET]
+    w0 = [si * p for si, p in zip(s, p0)]
+    dl = age_lean(c); mu = sum(w * d for w, d in zip(w0, dl)) / sum(w0); dl = [d - mu for d in dl]
+    lam = dT * tot / sum(si * i / 100 for si, i in zip(s, TURNOUT_INC))
+    p1 = [min(0.98, max(0.05, p + lam * i / 100)) for p, i in zip(p0, TURNOUT_INC)]
+    add = [si * (b - a) for si, a, b in zip(s, p0, p1)]
+    A = sum(a * d for a, d in zip(add, dl)) / sum(add)
+    return A, sum(add) * (A + MOBIL_B) / sum(si * b for si, b in zip(s, p1))
 SIMCAMP = {}  # 每縣市每次模擬的勝選陣營，用來算席次機率分布
 def camp_of(county, name):
     b = bloc_of(county, name)
@@ -118,6 +142,10 @@ for c, v in info.items():
     # 選舉人數：(2022 選舉人數 × 1.02 與 2024 總統選舉人數 × 1.005) 平均
     elect = round((e22 * 1.02 + e24 * 1.005) / 2)
     inv = inv22 / 100
+    # 投票率敏感度：以 2022 投票率加 2 個百分點為基準，±3 個百分點取平均斜率（每 1 個百分點）
+    _tb = TURNOUT_BASE_OVERRIDE.get(c, t22) / 100 + 0.02
+    _Au, _up = turnout_effect(c, _tb, 0.03); _Ad, _dn = turnout_effect(c, _tb, -0.03)
+    turn_k = (_up - _dn) / 6; turn_A = (_Au + _Ad) / 2
     if c in MANUAL:
         mean = {k: s / 100 for k, s in MANUAL[c].items()}
         sd_c = SD[cls]
@@ -144,7 +172,7 @@ for c, v in info.items():
             tw = sum(w for w, _, _ in v["ps"]); spread = math.sqrt(sum(w * (g - v["gp"]) ** 2 for w, g, _ in v["ps"]) / tw)
         else: spread = 0.0
         sd_c = math.hypot(SD[cls], spread)
-        gsim = [gfinal + nat_draws[i] + random.gauss(0, sd_c) > 0.5 for i in range(SIMS)]
+        gsim = [gfinal + nat_draws[i] + random.gauss(0, sd_c) + turn_k * turn_draws[i] > 0.5 for i in range(SIMS)]
         gwin = sum(gsim) / SIMS
         bwc = next((camp_of(c, n) for n, p, b, i in cands if b == "B"), "其他")
         SIMCAMP[c] = ["綠" if x else bwc for x in gsim]
@@ -181,7 +209,7 @@ for c, v in info.items():
         bw_camp=("白" if bw and bw[0] in WHITE else "藍") if bw else "",
         leader_camp=("白" if leader in WHITE else "藍") if lb == "B" else {"G": "綠", "O": "其他"}[lb],
         poll_class=cls, poll_weight=round(wp, 2), n_polls=len(v["ps"]),
-        g_two=None if gfinal is None else round(gfinal, 4), sd=round(sd_c, 4), manual=c in MANUAL, g24p=round(COUNTIES[c][7], 4),
+        g_two=None if gfinal is None else round(gfinal, 4), sd=round(sd_c, 4), turn_k=round(turn_k, 5), turn_A=round(turn_A, 4), turn_B=MOBIL_B, manual=c in MANUAL, g24p=round(COUNTIES[c][7], 4),
         w22_name=RESULT22[c][0], w22_camp=RESULT22[c][1], g22=None if COUNTIES[c][6] is None else round(COUNTIES[c][6], 4),
         base_g=round(v["gb"], 4), poll_g=None if v["gp"] is None else round(v["gp"], 4), env=round(env_of(c), 4),
         adj_note="；".join(f"{t}（{a * ((1 - wp) / 0.4 if k == '派系' else 1):+.1f}）" for a, t, k in adjs if a) or "",

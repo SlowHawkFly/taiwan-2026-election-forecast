@@ -567,11 +567,12 @@
             <th class="lx-l">情境領先</th>
             <th>領先者勝率</th>
             <th class="lx-l">翻盤所需擺幅</th>
+            <th data-field="turn_k">投票率 +5 的影響</th>
           </tr></thead>
           <tbody></tbody>
         </table>
       </div>
-      <p class="lx-note">綠營占比＝綠營 ÷（藍白營＋綠營）。全國風向是在每個縣市的綠營占比上加減同樣的百分點。投票率情境假設：多出來（或少掉）的選民，藍綠比例接近該縣市 2024 總統大選（民眾黨票 75% 計入藍白），所以投票率越高，結果越接近 2024 總統大選的藍綠版圖（需驗證）。「翻盤所需擺幅」是在目前的投票率情境下，全國風向要往另一邊偏幾個百分點，這個縣市的領先者才會換人。花蓮、澎湖、金門、連江為多陣營或無綠營候選人，不套用情境。</p>
+      <p class="lx-note">綠營占比＝綠營 ÷（藍白營＋綠營）。全國風向是在每個縣市的綠營占比上加減同樣的百分點。投票率情境用年齡結構模型：投票率上升時，多出來的選民以年輕人為主（依中選會 2022 縣市長與 2024 總統大選的年齡投票率），年輕人偏綠（戴立安縣市民調交叉表），約讓新增選民偏綠 2.4–3.4 個百分點；但戴立安民調也顯示綠營支持者「一定會去投票」的比例較高，不確定會去的支持者偏藍，這個基本盤動員效果減半後計 −4.6 個百分點。兩者相加，投票率越高對藍營略為有利，但幅度很小（投票率 +5 約讓綠營占比少 0.1–0.2 個百分點）。「翻盤所需擺幅」是在目前的投票率情境下，全國風向要往另一邊偏幾個百分點，這個縣市的領先者才會換人。花蓮、澎湖、金門、連江為多陣營或無綠營候選人，不套用情境。</p>
     </div>
   </section>
 
@@ -689,7 +690,8 @@
         <li><b>陣營歸類</b>：藍白營包含國民黨、民眾黨，以及兩黨正式推薦或支持的無黨籍（如新竹市高虹安、嘉義縣吳品叡）。席次再拆成藍營與白營：白營為民眾黨或民眾黨出身、藍白共推者（嘉義市張啓楷、新竹市高虹安）。其他無黨籍列為「其他」。</li>
         <li><b>版圖人口</b>：各陣營預測領先縣市的人口加總，人口取內政部戶政司 2026 年 9 月底戶口統計速報。</li>
         <li><b>席次機率分布</b>：模型兩萬次模擬中，每一次各縣市的勝選陣營加總成席次；因為全國誤差共用，各縣市會一起偏藍或偏綠，分布比各縣市獨立計算更寬。第 5 期起提供。</li>
-        <li><b>情境模擬器</b>：在每個縣市的綠營占比上加減同樣的全國風向；投票率情境假設增減的選民藍綠比例接近該縣市 2024 總統大選（需驗證）。勝率以常態分布近似模型的誤差（含全國誤差），與總覽數字可能有些微差距。</li>
+        <li><b>情境模擬器</b>：在每個縣市的綠營占比上加減同樣的全國風向；投票率情境使用下方的年齡結構模型。勝率以常態分布近似模型的誤差（含全國誤差），與總覽數字可能有些微差距。</li>
+        <li><b>投票率的年齡結構模型</b>：各縣市 20 歲以上人口依內政部 2026 年 9 月年齡別人口分成 6 組。基準投票率依中選會委託研究的 2022 縣市長選舉年齡投票率（台北、新北、台中平均形狀）調整到各縣市；投票率上升時，各年齡層增加的形狀比照 2022 縣市長選舉到 2024 總統大選（30 歲以下增加最多、70 歲以上幾乎不變）。各年齡層藍綠傾向以戴立安縣市民調交叉表為主（台北、新北、台中各取該市與全國模式各半，其他縣市用三市合併的全國模式；戴立安全國民心調查未公開年齡交叉表）。基本盤動員：戴立安民調中綠營支持者「一定會去投票」比例較高，不確定會去的支持者偏藍約 9 個百分點，因綠營支持者較願意受訪，使用者決定減半計 −4.6。全國投票率另有 ±3 個百分點的不確定性放進模擬。</li>
         <li><b>候選人效應</b>：預測綠營占比減掉「政黨結構盤＋區域風向」，反映民調與基本盤的落差、現任加分、派系與輿論調整。</li>
         <li><b>無民調縣市替代指標</b>：苗栗、南投、嘉義縣、屏東、連江沒有可採計的民調，改用《遠見》2026 縣市長施政滿意度與連任支持度，列為「滿意度」類調整（每縣市 ±1.5 以內；卸任首長的滿意度對同黨接班人只計一部分）。</li>
         <li><b>各縣市領先陣營（按人口）</b>：一個縣市一個圓，圓面積與人口成正比，排在大致的地理位置（為了好讀，新北／台北與新竹／苗栗的相對位置經人工調整）。</li>
@@ -714,6 +716,7 @@
         <li>10/23 第三次修正：新竹縣加入藍營分裂的派系調整（徐欣瑩與陳見賢交惡、竹北藍白合破局），鄭朝方轉為小幅領先；席次拆分藍營與白營；新增版圖人口。</li>
         <li>10/28 第 3 期：依使用者指定，台北市的 ETtoday 民調不採計（其他縣市照常採計）。新竹縣民調增加、結構盤權重降為 20%，派系調整依比例由 +3 降為 +1.5。</li>
         <li>11/02 第 4 期：派系調整改為依結構盤權重自動換算（原本第 3 期手動降為 +1.5）。新竹縣 9 月民調超過 6 週後民調等級回到「少」，結構盤權重回到 40%，派系調整回到 +3。</li>
+        <li>11/03 第 5 期修正（四）：投票率情境改用年齡結構模型（中選會年齡投票率、內政部年齡人口、戴立安年齡交叉表與投票意願），取代原本「接近 2024 總統大選」的假設；新增全國投票率不確定性到模擬。結果投票率越高對藍營略為有利但幅度很小，各縣市勝率變動不到 0.1 個百分點。</li>
         <li>11/03 第 5 期修正（三）：無民調的苗栗、南投、嘉義縣、屏東、連江加入《遠見》2026 縣市長滿意度替代指標；屏東、嘉義縣各往綠約 1 個百分點、苗栗往藍約 1 個百分點，連江由微幅轉為傾向王忠銘。新增席次機率分布、情境模擬器、2022 對照與候選人效應。</li>
         <li>11/03 第 5 期修正：新增 D 級規則（無原始來源或不可信的民調只列出、不採計）。新竹縣關鍵調查（10/25–26）因稱僅 5.9% 縣民知道鄭朝方參選、可信度存疑，列為 D 級；新竹縣轉回鄭朝方微幅領先。台中世新民調（10/15，國民黨委託）亦改列 D 級，台中江啟臣領先縮小（勝率 60% → 54%）。</li>
       </ul>
@@ -1157,7 +1160,7 @@
   function staticOf(x) {
     if (x._static) return x._static;
     const m = {};
-    x.counties.slice().sort((a, b) => d3.ascending(a.week, b.week)).forEach((r) => { if (r.w22_camp !== undefined) m[r.county] = { w22_name: r.w22_name, w22_camp: r.w22_camp, g22: r.g22, g24p: r.g24p }; });
+    x.counties.slice().sort((a, b) => d3.ascending(a.week, b.week)).forEach((r) => { if (r.w22_camp !== undefined) m[r.county] = { w22_name: r.w22_name, w22_camp: r.w22_camp, g22: r.g22, g24p: r.g24p, turn_k: r.turn_k, turn_A: r.turn_A, turn_B: r.turn_B }; });
     x._static = m; return m;
   }
   function twoParty(r) {
@@ -1168,12 +1171,13 @@
   function scenarioRow(r, st, swing, dT) {
     const t0 = twoParty(r);
     if (t0 == null) return { r, fixed: true, camp: r.leader_camp, win: r.leader_win };
-    const T = r.turnout * 100, m = st[r.county]?.g24p ?? t0;
-    const t1 = dT ? (t0 * T + m * dT) / (T + dT) : t0;
+    // 投票率的年齡結構模型：每增加 1 個百分點的綠營占比變化（模型輸出 turn_k）
+    const k = r.turn_k ?? st[r.county]?.turn_k ?? 0;
+    const t1 = t0 + k * dT;
     const t = t1 + swing / 100;
     const pg = Phi((t - 0.5) / Math.hypot(r.sd ?? SD_FALLBACK[r.poll_class] ?? 0.055, NAT_SD));
     const g = t > 0.5;
-    return { r, fixed: false, camp: g ? '綠' : (r.bw_camp || '藍'), leader: g ? r.g_name : r.bw_name, win: g ? pg : 1 - pg, t0, t1, t, pg, need: (0.5 - t1) * 100 };
+    return { r, fixed: false, camp: g ? '綠' : (r.bw_camp || '藍'), leader: g ? r.g_name : r.bw_name, win: g ? pg : 1 - pg, t0, t1, t, pg, k, need: (0.5 - t1) * 100 };
   }
   function kpi(label, val, unit, foot, k) {
     const d = el('div', 'lx-kpi'); if (k) d.style.setProperty('--k', C[k]);
@@ -1248,7 +1252,8 @@
       const lead = el('span'); lead.append(chip(z.camp + (z.camp === '其他' ? '' : '營'), k, (z.win ?? 0) >= 0.75), ' ', z.fixed ? z.r.leader : z.leader);
       let need = '—';
       if (!z.fixed) { const n = z.need; const sp = el('span', 'lx-delta ' + (n > 0 ? 'is-g' : 'is-b'), (n > 0 ? '綠 +' : '藍 +') + Math.abs(n).toFixed(1)); const bar = el('i', 'lx-swatch-bar'); bar.style.width = Math.min(60, Math.abs(n) * 6) + 'px'; bar.style.background = C[n > 0 ? 'G' : (CAMP[z.r.bw_camp] || 'B')]; need = el('span'); need.append(sp, bar); }
-      tr.append(td(full(z.r.county), 'lx-l lx-sticky'), td(z.fixed ? '多陣營' : pct(z.t0)), td(z.fixed ? '不套用' : pct(z.t)), td(lead, 'lx-l'), td(pct0(z.win)), td(need, 'lx-l'));
+      const k5 = z.fixed ? '—' : (() => { const v = z.k * 5 * 100; return el('span', 'lx-delta ' + (v > 0 ? 'is-g' : v < 0 ? 'is-b' : ''), (v > 0 ? '綠 +' : v < 0 ? '藍 +' : '±') + Math.abs(v).toFixed(2)); })();
+      tr.append(td(full(z.r.county), 'lx-l lx-sticky'), td(z.fixed ? '多陣營' : pct(z.t0)), td(z.fixed ? '不套用' : pct(z.t)), td(lead, 'lx-l'), td(pct0(z.win)), td(need, 'lx-l'), td(k5));
       if (z.camp !== z.r.leader_camp) tr.classList.add('lx-winrow');
       tr.addEventListener('click', () => openCounty(z.r.county));
       return tr;
