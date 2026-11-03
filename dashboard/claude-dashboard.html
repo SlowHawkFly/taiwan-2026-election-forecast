@@ -97,6 +97,28 @@
   .lx-bubble svg { display: block; width: 100%; max-width: 30rem; height: auto; margin-inline: auto; overflow: visible; }
   .lx-bubble .lx-b { cursor: pointer; outline: none; }
   .lx-bubble .lx-b:hover circle, .lx-bubble .lx-b:focus-visible circle { stroke: var(--color-fg) !important; stroke-width: 3px !important; }
+  /* 情境模擬、對照分析、CSV 與分享 */
+  .lx-sim-ctrl { display: grid; gap: var(--cds-gap-sm); padding: var(--cds-pad-sm) var(--cds-pad-md); border: 1px solid var(--lx-line); border-radius: var(--cds-radius); background: var(--lx-tint); }
+  .lx-sim-row { display: flex; align-items: center; gap: var(--cds-gap-sm) var(--cds-gap-md); flex-wrap: wrap; }
+  .lx-sim-label { font-weight: var(--cds-font-weight-medium); min-width: 4.5rem; }
+  .lx-sim-row input[type=range] { flex: 1 1 10rem; min-width: 8rem; accent-color: var(--color-fg); }
+  .lx-sim-end { font-size: var(--cds-font-size-caption); }
+  .lx-sim-val { min-width: 3.6rem; text-align: right; }
+  @media (max-width: 640px) { .lx-sim-label { flex-basis: 100%; } .lx-sim-row input[type=range] { min-width: 6rem; } }
+  .lx-cmp { display: grid; gap: var(--cds-gap-md); }
+  .lx-cmp-row { display: grid; grid-template-columns: 6.5rem 1fr; gap: var(--cds-gap-sm) var(--cds-gap-md); align-items: center; }
+  .lx-cmp-row .lx-popbar { height: 1.7rem; }
+  .lx-cmp-seats { display: flex; flex-wrap: wrap; gap: 3px; }
+  .lx-cmp-seats i { width: .95rem; height: .95rem; border-radius: 3px; display: inline-block; }
+  .lx-cmp-cap { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .lx-list-wide li { grid-template-columns: 5rem 1fr; }
+  .lx-csv { display: flex; gap: var(--cds-gap-sm); flex-wrap: wrap; }
+  .lx-csv-fb { display: grid; gap: var(--cds-gap-sm); }
+  .lx-csv-fb textarea { width: 100%; box-sizing: border-box; font: .75rem/1.4 ui-monospace, monospace; background: var(--color-panel); color: var(--color-fg); border: 1px solid var(--lx-line); border-radius: 8px; padding: 6px; }
+  .lx-share { display: flex; gap: var(--cds-gap-sm); flex-wrap: wrap; align-items: center; justify-content: flex-end; }
+  .lx-share input { font: inherit; font-size: var(--cds-font-size-caption); min-width: 14rem; flex: 1; background: var(--color-panel); color: var(--color-fg); border: 1px solid var(--lx-line); border-radius: 8px; padding: 3px 8px; }
+  .lx-swatch-bar { display: inline-block; height: .55rem; border-radius: 3px; vertical-align: middle; margin-left: 6px; }
+  .lx-dist-link { font: inherit; background: none; border: 0; padding: 0; color: var(--lx-kmt); cursor: pointer; text-decoration: underline; }
   /* 方格地圖：第 1 欄金馬、第 3 欄澎湖、第 5–8 欄本島 */
   .lx-map { display: grid; grid-template-columns: 1fr 1.1fr 1fr .5fr repeat(4, 1fr); grid-auto-rows: 4.1rem; gap: 5px; max-width: 34rem; width: 100%; margin-inline: auto; }
   .lx-tile { border-radius: 7px; border: 1.5px solid transparent; padding: 3px 2px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 1px; text-align: center; cursor: pointer; font: inherit; line-height: 1.2; min-width: 0; overflow: hidden; color: var(--color-fg); }
@@ -200,6 +222,8 @@
   <nav class="lx-tabs" role="tablist" aria-label="分頁">
     <button class="lx-tab" role="tab" id="tab-overview" data-page="overview" aria-selected="true">總覽</button>
     <button class="lx-tab" role="tab" id="tab-county" data-page="county" aria-selected="false">縣市明細</button>
+    <button class="lx-tab" role="tab" id="tab-scenario" data-page="scenario" aria-selected="false">情境模擬</button>
+    <button class="lx-tab" role="tab" id="tab-compare" data-page="compare" aria-selected="false">對照分析</button>
     <button class="lx-tab" role="tab" id="tab-history" data-page="history" aria-selected="false">歷史預測</button>
     <button class="lx-tab" role="tab" id="tab-polls" data-page="polls" aria-selected="false">民調資料</button>
     <button class="lx-tab" role="tab" id="tab-method" data-page="method" aria-selected="false">預測方法</button>
@@ -241,6 +265,7 @@
           <span class="lx-kpi-foot">領先者勝率低於 75%</span>
         </div>
       </div>
+      <p class="lx-note" id="lx-majority" data-source="weeks"></p>
     </div>
 
     <div class="lx-card" id="card-close">
@@ -301,6 +326,10 @@
       <div class="lx-tools">
         <h2 class="lx-h2">22 縣市預測總表</h2>
         <input id="lx-search" type="search" placeholder="搜尋縣市或候選人" aria-label="搜尋縣市或候選人">
+        <div class="lx-csv">
+          <button class="lx-filter" id="lx-csv" type="button">下載本期 CSV</button>
+          <button class="lx-filter" id="lx-csv-all" type="button">下載全部期別 CSV</button>
+        </div>
       </div>
       <div class="lx-filters" id="lx-filters" role="group" aria-label="篩選">
         <button class="lx-filter" data-f="all" aria-pressed="true">全部</button>
@@ -308,6 +337,11 @@
         <button class="lx-filter" data-f="藍" aria-pressed="false">藍營領先</button>
         <button class="lx-filter" data-f="白" aria-pressed="false">白營領先</button>
         <button class="lx-filter" data-f="綠" aria-pressed="false">綠營領先</button>
+      </div>
+      <div class="lx-csv-fb" id="lx-csv-fb" hidden>
+        <p class="lx-note">若沒有開始下載，可複製下方內容，貼到記事本後存成 .csv 檔（Excel 開啟時選 UTF-8）。</p>
+        <textarea id="lx-csv-text" readonly rows="6" aria-label="CSV 內容"></textarea>
+        <div><button class="lx-filter" id="lx-csv-copy" type="button">複製內容</button> <button class="lx-filter" id="lx-csv-close" type="button">關閉</button></div>
       </div>
       <p class="lx-note">框起來並打勾的是預測勝選者（花蓮、金門、連江的無黨籍候選人在縣市明細）。得票率＝得票數 ÷ 有效票；催票率＝得票數 ÷ 選舉人數。點欄位標題排序，點一列看縣市明細。</p>
       <div class="lx-scroll">
@@ -341,7 +375,11 @@
         <h2 class="lx-detail-title" id="lx-d-title">—</h2>
         <span id="lx-d-rating"></span>
       </div>
-      <label class="lx-pill" for="lx-county">切換縣市 <select id="lx-county" data-source="counties"></select></label>
+      <div class="lx-share">
+        <label class="lx-pill" for="lx-county">切換縣市 <select id="lx-county" data-source="counties"></select></label>
+        <button class="lx-filter" id="lx-share-btn" type="button">複製這個縣市的連結</button>
+        <input id="lx-share-url" readonly hidden aria-label="縣市連結">
+      </div>
     </div>
     <div class="lx-card" id="card-county-summary">
       <div class="lx-facts">
@@ -406,6 +444,109 @@
           <tbody></tbody>
         </table>
       </div>
+    </div>
+  </section>
+
+  <!-- 情境模擬 -->
+  <section class="lx-page" id="scenario" hidden>
+    <div class="lx-card" id="card-dist">
+      <div class="lx-card-head">
+        <h2 class="lx-h2">席次機率分布</h2>
+        <span class="lx-note">兩萬次模擬；全國誤差共用，各縣市會一起偏藍或偏綠</span>
+      </div>
+      <div class="lx-kpis" id="lx-dist-kpis" data-source="weeks"></div>
+      <div class="lx-chart" id="lx-dist" data-source="weeks"></div>
+      <div class="lx-legend" id="lx-dist-legend"></div>
+      <p class="lx-note" id="lx-dist-note"></p>
+    </div>
+    <div class="lx-card" id="card-sim">
+      <div class="lx-card-head">
+        <h2 class="lx-h2">情境模擬器</h2>
+        <span class="lx-note">拖動全國風向、切換投票率，看各縣市怎麼變</span>
+      </div>
+      <div class="lx-sim-ctrl">
+        <div class="lx-sim-row">
+          <label class="lx-sim-label" for="lx-swing">全國風向</label>
+          <span class="lx-sim-end" style="color:var(--lx-kmt)">往藍</span>
+          <input type="range" id="lx-swing" min="-6" max="6" step="0.5" value="0" aria-describedby="lx-swing-v">
+          <span class="lx-sim-end" style="color:var(--lx-dpp)">往綠</span>
+          <b class="lx-num lx-sim-val" id="lx-swing-v">±0.0</b>
+        </div>
+        <div class="lx-sim-row">
+          <span class="lx-sim-label">投票率</span>
+          <div class="lx-filters" id="lx-turn" role="group" aria-label="投票率情境">
+            <button class="lx-filter" data-t="-6" aria-pressed="false">−6</button>
+            <button class="lx-filter" data-t="-3" aria-pressed="false">−3</button>
+            <button class="lx-filter" data-t="0" aria-pressed="true">本期預測</button>
+            <button class="lx-filter" data-t="3" aria-pressed="false">+3</button>
+            <button class="lx-filter" data-t="6" aria-pressed="false">+6</button>
+          </div>
+          <span class="lx-note">個百分點（22 縣市同時增減）</span>
+        </div>
+        <div><button class="lx-filter" id="lx-sim-reset" type="button">回到本期預測</button></div>
+      </div>
+      <div class="lx-kpis" id="lx-sim-kpis"></div>
+      <div class="lx-popbar" id="lx-sim-pop"></div>
+      <p class="lx-note" id="lx-sim-flips"></p>
+      <div class="lx-scroll">
+        <table id="lx-sim-table" data-source="counties" data-row-key="id">
+          <thead><tr>
+            <th class="lx-l lx-sticky" data-field="county">縣市</th>
+            <th data-field="g_two">本期綠營占比</th>
+            <th>情境綠營占比</th>
+            <th class="lx-l">情境領先</th>
+            <th>領先者勝率</th>
+            <th class="lx-l">翻盤所需擺幅</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="lx-note">綠營占比＝綠營 ÷（藍白營＋綠營）。全國風向是在每個縣市的綠營占比上加減同樣的百分點。投票率情境假設：多出來（或少掉）的選民，藍綠比例接近該縣市 2024 總統大選（民眾黨票 75% 計入藍白），所以投票率越高，結果越接近 2024 總統大選的藍綠版圖（需驗證）。「翻盤所需擺幅」是在目前的投票率情境下，全國風向要往另一邊偏幾個百分點，這個縣市的領先者才會換人。花蓮、澎湖、金門、連江為多陣營或無綠營候選人，不套用情境。</p>
+    </div>
+  </section>
+
+  <!-- 對照分析 -->
+  <section class="lx-page" id="compare" hidden>
+    <div class="lx-card" id="card-cmp-seats">
+      <div class="lx-card-head">
+        <h2 class="lx-h2">2022 實際結果 vs 本期預測</h2>
+        <span class="lx-note">版圖人口都用 2026 年 9 月底人口計算，方便比較</span>
+      </div>
+      <div class="lx-cmp" id="lx-cmp-seats" data-source="counties"></div>
+      <p class="lx-note">2022 以無黨籍當選、未獲政黨正式提名的苗栗鍾東錦、金門陳福海列為「其他」。</p>
+    </div>
+    <div class="lx-card" id="card-cmp-flip">
+      <div class="lx-card-head">
+        <h2 class="lx-h2">可能換黨執政的縣市</h2>
+        <span class="lx-note">本期預測領先陣營與 2022 當選人陣營不同</span>
+      </div>
+      <ul class="lx-list lx-list-wide" id="lx-cmp-flips" data-source="counties"></ul>
+    </div>
+    <div class="lx-card" id="card-cmp-table">
+      <h2 class="lx-h2">各縣市 2022 → 2026</h2>
+      <div class="lx-scroll">
+        <table id="lx-cmp-table" data-source="counties" data-row-key="id">
+          <thead><tr>
+            <th class="lx-l lx-sticky" data-field="county">縣市</th>
+            <th class="lx-l" data-field="w22_name">2022 當選人</th>
+            <th data-field="g22">2022 綠營占比</th>
+            <th data-field="g_two">本期綠營占比</th>
+            <th>變化</th>
+            <th class="lx-l" data-field="leader">本期領先</th>
+            <th class="lx-l">換黨</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="lx-note">綠營占比＝綠營 ÷（藍白營＋綠營）；2022 苗栗、澎湖等多人參選的縣市，以藍白陣營所有候選人合計；台北 2022 不把黃珊珊算入藍白（與模型結構盤相同口徑）。嘉義市 2022 為延後補選、金門與連江無綠營候選人，不列占比。</p>
+    </div>
+    <div class="lx-card" id="card-cand-eff">
+      <div class="lx-card-head">
+        <h2 class="lx-h2">候選人效應</h2>
+        <span class="lx-note">預測綠營占比 −（政黨結構盤＋區域風向）</span>
+      </div>
+      <div class="lx-chart" id="lx-ceff" data-source="counties"></div>
+      <p class="lx-note">往右（綠）代表綠營候選人比政黨基本盤加風向表現好，或藍白營候選人較弱；往左（藍）相反。包含民調與結構盤的落差、現任加分、派系與輿論調整。顏色較淡的縣市沒有民調，數值只反映現任與調整項，參考性較低。多陣營縣市不列。</p>
     </div>
   </section>
 
@@ -477,6 +618,10 @@
         <li><b>選舉人數</b>：中選會選前三天才公告，在那之前取 2022 年選舉人數 ×1.02 與 2024 總統選舉人數 ×1.005 的平均。</li>
         <li><b>陣營歸類</b>：藍白營包含國民黨、民眾黨，以及兩黨正式推薦或支持的無黨籍（如新竹市高虹安、嘉義縣吳品叡）。席次再拆成藍營與白營：白營為民眾黨或民眾黨出身、藍白共推者（嘉義市張啓楷、新竹市高虹安）。其他無黨籍列為「其他」。</li>
         <li><b>版圖人口</b>：各陣營預測領先縣市的人口加總，人口取內政部戶政司 2026 年 9 月底戶口統計速報。</li>
+        <li><b>席次機率分布</b>：模型兩萬次模擬中，每一次各縣市的勝選陣營加總成席次；因為全國誤差共用，各縣市會一起偏藍或偏綠，分布比各縣市獨立計算更寬。第 5 期起提供。</li>
+        <li><b>情境模擬器</b>：在每個縣市的綠營占比上加減同樣的全國風向；投票率情境假設增減的選民藍綠比例接近該縣市 2024 總統大選（需驗證）。勝率以常態分布近似模型的誤差（含全國誤差），與總覽數字可能有些微差距。</li>
+        <li><b>候選人效應</b>：預測綠營占比減掉「政黨結構盤＋區域風向」，反映民調與基本盤的落差、現任加分、派系與輿論調整。</li>
+        <li><b>無民調縣市替代指標</b>：苗栗、南投、嘉義縣、屏東、連江沒有可採計的民調，改用《遠見》2026 縣市長施政滿意度與連任支持度，列為「滿意度」類調整（每縣市 ±1.5 以內；卸任首長的滿意度對同黨接班人只計一部分）。</li>
         <li><b>各縣市領先陣營（按人口）</b>：一個縣市一個圓，圓面積與人口成正比，排在大致的地理位置（為了好讀，新北／台北與新竹／苗栗的相對位置經人工調整）。</li>
       </ul>
       <h3>六個步驟</h3>
@@ -499,6 +644,7 @@
         <li>10/23 第三次修正：新竹縣加入藍營分裂的派系調整（徐欣瑩與陳見賢交惡、竹北藍白合破局），鄭朝方轉為小幅領先；席次拆分藍營與白營；新增版圖人口。</li>
         <li>10/28 第 3 期：依使用者指定，台北市的 ETtoday 民調不採計（其他縣市照常採計）。新竹縣民調增加、結構盤權重降為 20%，派系調整依比例由 +3 降為 +1.5。</li>
         <li>11/02 第 4 期：派系調整改為依結構盤權重自動換算（原本第 3 期手動降為 +1.5）。新竹縣 9 月民調超過 6 週後民調等級回到「少」，結構盤權重回到 40%，派系調整回到 +3。</li>
+        <li>11/03 第 5 期修正（三）：無民調的苗栗、南投、嘉義縣、屏東、連江加入《遠見》2026 縣市長滿意度替代指標；屏東、嘉義縣各往綠約 1 個百分點、苗栗往藍約 1 個百分點，連江由微幅轉為傾向王忠銘。新增席次機率分布、情境模擬器、2022 對照與候選人效應。</li>
         <li>11/03 第 5 期修正：新增 D 級規則（無原始來源或不可信的民調只列出、不採計）。新竹縣關鍵調查（10/25–26）因稱僅 5.9% 縣民知道鄭朝方參選、可信度存疑，列為 D 級；新竹縣轉回鄭朝方微幅領先。台中世新民調（10/15，國民黨委託）亦改列 D 級，台中江啟臣領先縮小（勝率 60% → 54%）。</li>
       </ul>
       <h3>限制</h3>
@@ -700,6 +846,8 @@
     if (S.page === 'county') renderCounty(x, rows);
     if (S.page === 'history') renderHistory(x);
     if (S.page === 'polls') renderPolls(x);
+    if (S.page === 'scenario') renderScenario(x, rows, winfo);
+    if (S.page === 'compare') renderCompare(x, rows);
   }
 
   function legend(target, withStrength) {
@@ -784,6 +932,16 @@
     });
     legend($('lx-bubble-legend'), true);
 
+    // 席次機率一句話（完整分布在情境模擬）
+    const md = $('lx-majority'); md.replaceChildren();
+    const sdist = x.weeks.find((w) => w.week === x.week)?.seat_dist;
+    if (sdist) {
+      const ge = (k, n) => d3.sum(sdist[k].slice(n));
+      const go = el('button', 'lx-dist-link', '看完整分布'); go.type = 'button'; go.addEventListener('click', () => { show('scenario'); toTop(); });
+      md.append(`席次機率：藍白營合計過半（12 席以上）${pct0(ge('藍白', 12))}、綠營過半 ${pct0(ge('綠', 12))}。`, go);
+      mark(md, 'weeks', 'seat_dist', wq);
+    }
+
     // 關鍵戰區
     const close = rows.filter((r) => r.leader_win < 0.75).sort((a, b) => a.leader_win - b.leader_win);
     $('lx-close').replaceChildren(...close.map((r) => {
@@ -852,6 +1010,7 @@
     const where = 'id=' + enc(r.id);
     const k = CAMP[r.leader_camp];
     $('lx-d-title').textContent = r.county;
+    dash.setLink('county/' + r.county); $('lx-share-url').hidden = true; $('lx-share-btn').textContent = '複製這個縣市的連結';
     $('lx-d-rating').replaceChildren(chip(`${r.rating}・${r.leader} 領先，勝率 ${pct0(r.leader_win)}`, k, true));
     const set = (id, f, txt) => { const e = $(id); e.textContent = txt; mark(e, 'counties', f, where); };
     set('lx-d-elect', 'electorate', int(r.electorate));
@@ -916,6 +1075,250 @@
     const list = x.polls.filter((p) => p.week === x.week && (!q || (p.county + p.pollster).includes(q))).sort((a, b) => d3.ascending(a.county, b.county) || d3.descending(a.date, b.date));
     pollRows(document.querySelector('#lx-polls tbody'), list, true);
   }
+
+  // ===== 情境模擬 =====
+  const SD_FALLBACK = { '多': 0.04, '少': 0.055, '幾乎沒有': 0.065 };
+  const MANUAL_FALLBACK = new Set(['花蓮縣', '澎湖縣', '金門縣', '連江縣']);
+  const NAT_SD = 0.015;
+  const erf = (z) => { const t = 1 / (1 + 0.3275911 * Math.abs(z)); const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-z * z); return z >= 0 ? y : -y; };
+  const Phi = (z) => 0.5 * (1 + erf(z / Math.SQRT2));
+  const CAMPS = [['藍', 'B'], ['白', 'W'], ['綠', 'G'], ['其他', 'O']];
+  // 不隨期別變動的欄位（2022 結果、2024 總統綠營占比）：取最新一期有提供的值
+  function staticOf(x) {
+    if (x._static) return x._static;
+    const m = {};
+    x.counties.slice().sort((a, b) => d3.ascending(a.week, b.week)).forEach((r) => { if (r.w22_camp !== undefined) m[r.county] = { w22_name: r.w22_name, w22_camp: r.w22_camp, g22: r.g22, g24p: r.g24p }; });
+    x._static = m; return m;
+  }
+  function twoParty(r) {
+    const manual = r.manual ?? MANUAL_FALLBACK.has(r.county);
+    if (manual || !(r.g_share > 0) || !(r.bw_share > 0)) return null;
+    return r.g_two ?? r.g_share / (r.g_share + r.bw_share);
+  }
+  function scenarioRow(r, st, swing, dT) {
+    const t0 = twoParty(r);
+    if (t0 == null) return { r, fixed: true, camp: r.leader_camp, win: r.leader_win };
+    const T = r.turnout * 100, m = st[r.county]?.g24p ?? t0;
+    const t1 = dT ? (t0 * T + m * dT) / (T + dT) : t0;
+    const t = t1 + swing / 100;
+    const pg = Phi((t - 0.5) / Math.hypot(r.sd ?? SD_FALLBACK[r.poll_class] ?? 0.055, NAT_SD));
+    const g = t > 0.5;
+    return { r, fixed: false, camp: g ? '綠' : (r.bw_camp || '藍'), leader: g ? r.g_name : r.bw_name, win: g ? pg : 1 - pg, t0, t1, t, pg, need: (0.5 - t1) * 100 };
+  }
+  function kpi(label, val, unit, foot, k) {
+    const d = el('div', 'lx-kpi'); if (k) d.style.setProperty('--k', C[k]);
+    const v = el('span', 'lx-kpi-val lx-num', val); if (unit) v.append(el('small', null, unit));
+    d.append(el('span', 'lx-kpi-label', label), v, el('span', 'lx-kpi-foot', foot || ''));
+    return d;
+  }
+  const swingText = (s) => s === 0 ? '±0.0' : (s > 0 ? '綠 +' : '藍 +') + Math.abs(s).toFixed(1);
+
+  function renderScenario(x, rows, winfo) {
+    // 席次機率分布
+    const sd = winfo.seat_dist;
+    const dk = $('lx-dist-kpis'), box = $('lx-dist');
+    if (!sd) {
+      dk.replaceChildren(); box.replaceChildren(el('p', 'lx-note', '這一期沒有席次機率分布（第 5 期起提供），請切換到最新一期。'));
+      $('lx-dist-legend').replaceChildren(); $('lx-dist-note').textContent = '';
+    } else {
+      const ge = (k, n) => d3.sum(sd[k].slice(n));
+      const q = (k, p) => { let c = 0; for (let i = 0; i < sd[k].length; i++) { c += sd[k][i]; if (c >= p) return i; } return sd[k].length - 1; };
+      const mode = (k) => d3.maxIndex(sd[k]);
+      dk.replaceChildren(
+        kpi('藍白營合計過半', pct0(ge('藍白', 12)), null, '12 席以上的機率', 'B'),
+        kpi('藍營單獨過半', pct0(ge('藍', 12)), null, '不含白營（新竹市）', 'B'),
+        kpi('綠營過半', pct0(ge('綠', 12)), null, '12 席以上的機率', 'G'),
+        kpi('最可能結果', `${mode('藍白')}：${mode('綠')}`, null, '藍白營合計：綠營（席）'),
+        kpi('80% 可能範圍', `${q('綠', 0.1)}–${q('綠', 0.9)}`, '席', `綠營；藍白營 ${q('藍白', 0.1)}–${q('藍白', 0.9)} 席`, 'G'));
+      dk.querySelectorAll('.lx-kpi').forEach((e) => mark(e, 'weeks', 'seat_dist', 'week=' + enc(x.week)));
+      drawDist(box, sd);
+      const lg = $('lx-dist-legend'); lg.replaceChildren(...[['藍白營合計', 'B'], ['綠營', 'G']].map(([n, k]) => { const s = el('span'); const i = el('i', 'lx-sw'); i.style.background = C[k]; s.append(i, n); return s; }));
+      $('lx-dist-note').textContent = `虛線為過半門檻（22 席中的 12 席）。期望席次：藍營 ${d3.sum(sd['藍'].map((p, i) => p * i)).toFixed(1)}、白營 ${d3.sum(sd['白'].map((p, i) => p * i)).toFixed(1)}、綠營 ${d3.sum(sd['綠'].map((p, i) => p * i)).toFixed(1)}、其他 ${d3.sum(sd['其他'].map((p, i) => p * i)).toFixed(1)} 席。`;
+    }
+    // 情境模擬器
+    simRows = rows; simStatic = staticOf(x); simWeek = x.week;
+    if (!simBound) {
+      simBound = true;
+      $('lx-swing').addEventListener('input', (e) => { S.swing = +e.target.value; simUpdate(); });
+      $('lx-turn').addEventListener('click', (e) => { const b = e.target.closest('button[data-t]'); if (!b) return; S.dturn = +b.dataset.t; simUpdate(); });
+      $('lx-sim-reset').addEventListener('click', () => { S.swing = 0; S.dturn = 0; simUpdate(); });
+    }
+    simUpdate();
+  }
+  let simRows = null, simStatic = null, simWeek = null, simBound = false;
+  function simUpdate() {
+    if (!simRows) return;
+    const s = S.swing || 0, dT = S.dturn || 0;
+    $('lx-swing').value = s; $('lx-swing-v').textContent = swingText(s);
+    document.querySelectorAll('#lx-turn button').forEach((b) => b.setAttribute('aria-pressed', String(+b.dataset.t === dT)));
+    const res = simRows.map((r) => scenarioRow(r, simStatic, s, dT));
+    const seats = {}, exp = {}, pop = {};
+    CAMPS.forEach(([c]) => { seats[c] = 0; exp[c] = 0; pop[c] = 0; });
+    res.forEach((z) => {
+      seats[z.camp]++; pop[z.camp] += z.r.population;
+      if (z.fixed) { exp[z.r.bw_camp || '藍'] += z.r.win_bw; exp['綠'] += z.r.win_g; exp['其他'] += z.r.win_other; }
+      else { exp['綠'] += z.pg; exp[z.r.bw_camp || '藍'] += 1 - z.pg; }
+    });
+    const base = {}; CAMPS.forEach(([c]) => { base[c] = simRows.filter((r) => r.leader_camp === c).length; });
+    const dtext = (c) => { const d = seats[c] - base[c]; return d ? `較本期 ${d > 0 ? '+' : '−'}${Math.abs(d)} 席` : '與本期相同'; };
+    $('lx-sim-kpis').replaceChildren(...CAMPS.filter(([c]) => c !== '其他' || seats[c] || exp[c] > 0.05)
+      .map(([c, k]) => kpi(c === '其他' ? '其他領先' : c + '營領先', String(seats[c]), '席', `期望 ${exp[c].toFixed(1)} 席・${dtext(c)}`, k)));
+    const tot = d3.sum(simRows, (r) => r.population);
+    const pb = $('lx-sim-pop');
+    pb.replaceChildren(...[['藍營', '藍', 'B'], ['白營', '白', 'W'], ['其他', '其他', 'O'], ['綠營', '綠', 'G']].filter(([, c]) => pop[c] > 0).map(([n, c, k]) => {
+      const d = el('div', null, pop[c] / tot > 0.08 ? `${n} ${pct(pop[c] / tot)}` : ''); d.style.width = (pop[c] / tot * 100) + '%'; d.style.background = C[k]; d.title = `${n}領先縣市人口 ${wan(pop[c])} 萬（${pct(pop[c] / tot)}）`; return d;
+    }));
+    const flips = res.filter((z) => z.camp !== z.r.leader_camp);
+    $('lx-sim-flips').textContent = (s === 0 && dT === 0) ? '目前為本期預測。拖動風向或切換投票率後，這裡會列出換人領先的縣市。'
+      : flips.length ? `換人領先（${flips.length}）：` + flips.map((z) => `${full(z.r.county)}（${z.r.leader_camp}→${z.camp}）`).join('、') : '這個情境下沒有縣市換人領先。';
+    const tb = document.querySelector('#lx-sim-table tbody');
+    tb.replaceChildren(...res.slice().sort((a, b) => (a.fixed - b.fixed) || (Math.abs(a.need ?? 99) - Math.abs(b.need ?? 99))).map((z) => {
+      const tr = el('tr', 'lx-click'); tr.dataset.key = z.r.id;
+      const k = CAMP[z.camp];
+      const lead = el('span'); lead.append(chip(z.camp + (z.camp === '其他' ? '' : '營'), k, (z.win ?? 0) >= 0.75), ' ', z.fixed ? z.r.leader : z.leader);
+      let need = '—';
+      if (!z.fixed) { const n = z.need; const sp = el('span', 'lx-delta ' + (n > 0 ? 'is-g' : 'is-b'), (n > 0 ? '綠 +' : '藍 +') + Math.abs(n).toFixed(1)); const bar = el('i', 'lx-swatch-bar'); bar.style.width = Math.min(60, Math.abs(n) * 6) + 'px'; bar.style.background = C[n > 0 ? 'G' : (CAMP[z.r.bw_camp] || 'B')]; need = el('span'); need.append(sp, bar); }
+      tr.append(td(full(z.r.county), 'lx-l lx-sticky'), td(z.fixed ? '多陣營' : pct(z.t0)), td(z.fixed ? '不套用' : pct(z.t)), td(lead, 'lx-l'), td(pct0(z.win)), td(need, 'lx-l'));
+      if (z.camp !== z.r.leader_camp) tr.classList.add('lx-winrow');
+      tr.addEventListener('click', () => openCounty(z.r.county));
+      return tr;
+    }));
+  }
+  function drawDist(box, sd) {
+    box.replaceChildren();
+    const A = sd['藍白'], G = sd['綠'];
+    let lo = 0, hi = A.length - 1;
+    while (lo < hi && A[lo] < 0.002 && G[lo] < 0.002) lo++;
+    while (hi > lo && A[hi] < 0.002 && G[hi] < 0.002) hi--;
+    lo = Math.min(lo, 11); hi = Math.max(hi, 12);
+    const ks = d3.range(lo, hi + 1);
+    const width = box.clientWidth || 600, height = 230, m = { t: 18, r: 8, b: 30, l: 40 };
+    const xs = d3.scaleBand(ks, [m.l, width - m.r]).paddingInner(0.25).paddingOuter(0.1);
+    const ys = d3.scaleLinear([0, d3.max(ks, (k) => Math.max(A[k], G[k])) * 1.15], [height - m.b, m.t]).nice();
+    const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${width} ${height}`).attr('height', height).attr('role', 'img')
+      .attr('aria-label', '席次機率分布：藍白營合計與綠營各拿到幾席的機率');
+    svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(ys).ticks(4).tickSize(-(width - m.l - m.r)).tickFormat(d3.format('.0%')))
+      .attr('font-size', null).attr('font-family', null)
+      .call((g) => g.select('.domain').remove())
+      .call((g) => g.selectAll('line').attr('stroke', 'var(--cds-chart-grid)'))
+      .call((g) => g.selectAll('text').attr('fill', 'var(--color-fg-muted)').style('font-size', 'var(--cds-font-size-caption)'));
+    svg.append('g').attr('transform', `translate(0,${height - m.b})`).call(d3.axisBottom(xs).tickSize(0).tickFormat((d) => d + ''))
+      .attr('font-size', null).attr('font-family', null)
+      .call((g) => g.select('.domain').attr('stroke', 'var(--cds-chart-axis)'))
+      .call((g) => g.selectAll('text').attr('fill', 'var(--color-fg-muted)').attr('dy', '1.1em').style('font-size', 'var(--cds-font-size-caption)'));
+    const bw = xs.bandwidth() / 2;
+    ks.forEach((k) => {
+      const g = svg.append('g');
+      [[A[k], 0, 'B'], [G[k], bw, 'G']].forEach(([v, dx, c]) => { if (v > 0) g.append('rect').attr('x', xs(k) + dx).attr('width', Math.max(1, bw - 1)).attr('y', ys(v)).attr('height', ys(0) - ys(v)).attr('rx', 2).attr('fill', C[c]); });
+      g.append('rect').attr('x', xs(k) - xs.step() * 0.125).attr('width', xs.step()).attr('y', m.t).attr('height', height - m.t - m.b).attr('fill', 'transparent')
+        .on('mousemove', (ev) => showTip(ev, box, `${k} 席`, [['藍白營合計', A[k], 'B'], ['綠營', G[k], 'G']]))
+        .on('mouseleave', hideTip);
+    });
+    const xm = xs(12) - (xs.step() - xs.bandwidth()) / 2;
+    svg.append('line').attr('x1', xm).attr('x2', xm).attr('y1', m.t - 6).attr('y2', height - m.b).attr('stroke', 'var(--color-fg-muted)').attr('stroke-dasharray', '4 3');
+    svg.append('text').attr('x', xm + 4).attr('y', m.t - 6).attr('dy', '0.6em').attr('fill', 'var(--color-fg-muted)').style('font-size', 'var(--cds-font-size-caption)').text('過半 12 席 →');
+  }
+
+  // ===== 對照分析 =====
+  function renderCompare(x, rows) {
+    const st = staticOf(x);
+    const tot = d3.sum(rows, (r) => r.population);
+    const seatStrip = (campOf) => {
+      const order = ['藍', '白', '其他', '綠'];
+      const list = rows.map((r) => campOf(r)).sort((a, b) => order.indexOf(a) - order.indexOf(b));
+      const box = el('div', 'lx-cmp-seats'); list.forEach((c) => { const i = el('i'); i.style.background = C[CAMP[c]]; i.title = c; box.append(i); });
+      return box;
+    };
+    const popBar = (campOf) => {
+      const pop = {}; rows.forEach((r) => { const c = campOf(r); pop[c] = (pop[c] || 0) + r.population; });
+      const pb = el('div', 'lx-popbar');
+      pb.append(...['藍', '白', '其他', '綠'].filter((c) => pop[c] > 0).map((c) => { const d = el('div', null, pop[c] / tot > 0.08 ? `${c === '其他' ? '其他' : c + '營'} ${pct(pop[c] / tot)}` : ''); d.style.width = (pop[c] / tot * 100) + '%'; d.style.background = C[CAMP[c]]; d.title = `${c} ${wan(pop[c])} 萬（${pct(pop[c] / tot)}）`; return d; }));
+      return pb;
+    };
+    const cap = (campOf) => { const n = {}; rows.forEach((r) => { const c = campOf(r); n[c] = (n[c] || 0) + 1; }); return ['藍', '白', '綠', '其他'].map((c) => `${c} ${n[c] || 0}`).join('・') + ' 席'; };
+    const c22 = (r) => st[r.county]?.w22_camp ?? '其他', c26 = (r) => r.leader_camp;
+    const row = (label, f) => { const d = el('div', 'lx-cmp-row'); const right = el('div', 'lx-stack'); right.append(seatStrip(f), el('span', 'lx-cmp-cap', cap(f)), popBar(f)); d.append(el('b', null, label), right); return d; };
+    $('lx-cmp-seats').replaceChildren(row('2022 實際', c22), row('本期預測', c26));
+
+    const flips = rows.filter((r) => st[r.county] && c22(r) !== c26(r));
+    $('lx-cmp-flips').replaceChildren(...(flips.length ? flips.map((r) => {
+      const li = el('li'); const s = st[r.county]; const k = CAMP[r.leader_camp];
+      const body = el('span');
+      const same = s.w22_name === r.leader;
+      body.append(`${s.w22_name}（${s.w22_camp}）→ `, chip(r.rating, k, false), ' ', el('b', null, r.leader), `（${r.leader_camp}）${pct(r.leader_share)}，勝率 ${pct0(r.leader_win)}`, same ? '。同一人：2022 以無黨籍當選，這次由國民黨提名' : '');
+      li.append(el('b', null, full(r.county)), body); li.style.cursor = 'pointer'; li.addEventListener('click', () => openCounty(r.county));
+      return li;
+    }) : [el('li', null, '本期預測沒有縣市換黨執政。')]));
+
+    document.querySelector('#lx-cmp-table tbody').replaceChildren(...rows.map((r) => {
+      const s = st[r.county] || {}; const t = twoParty(r);
+      const tr = el('tr', 'lx-click'); tr.dataset.key = r.id;
+      const w22 = el('span'); w22.append(s.w22_name || '—'); if (s.w22_camp) w22.append(campTag(s.w22_camp));
+      const lead = el('span'); lead.append(r.leader, campTag(r.leader_camp));
+      let dlt = '—'; if (t != null && s.g22 != null) { const d = t - s.g22; dlt = el('span', 'lx-delta ' + (d > 0 ? 'is-g' : d < 0 ? 'is-b' : ''), sgn(d)); }
+      const flip = s.w22_camp && s.w22_camp !== r.leader_camp ? chip('換黨', CAMP[r.leader_camp], true) : '';
+      tr.append(td(full(r.county), 'lx-l lx-sticky'), td(w22, 'lx-l'), td(s.g22 == null ? '—' : pct(s.g22)), td(t == null ? '多陣營' : pct(t)), td(dlt), td(lead, 'lx-l'), td(flip, 'lx-l'));
+      tr.addEventListener('click', () => openCounty(r.county));
+      return tr;
+    }));
+
+    // 候選人效應
+    const items = rows.map((r) => { const t = twoParty(r); if (t == null || r.base_g == null) return null; return { r, v: (t - (r.base_g + (r.env || 0))) * 100 }; }).filter(Boolean).sort((a, b) => b.v - a.v);
+    drawEffect($('lx-ceff'), items);
+  }
+  function drawEffect(box, items) {
+    box.replaceChildren();
+    if (!items.length) return;
+    const width = box.clientWidth || 600, rowH = 22, m = { t: 8, r: 46, b: 24, l: 52 };
+    const height = items.length * rowH + m.t + m.b;
+    const M = Math.max(3, d3.max(items, (d) => Math.abs(d.v)) * 1.1);
+    const xs = d3.scaleLinear([-M, M], [m.l, width - m.r]).nice();
+    const ys = d3.scaleBand(items.map((d) => d.r.county), [m.t, height - m.b]).padding(0.25);
+    const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${width} ${height}`).attr('height', height).attr('role', 'img').attr('aria-label', '各縣市候選人效應');
+    svg.append('g').attr('transform', `translate(0,${height - m.b})`).call(d3.axisBottom(xs).ticks(6).tickSize(-(height - m.t - m.b)).tickFormat((v) => (v > 0 ? '綠 +' : v < 0 ? '藍 +' : '') + Math.abs(v)))
+      .attr('font-size', null).attr('font-family', null)
+      .call((g) => g.select('.domain').remove())
+      .call((g) => g.selectAll('line').attr('stroke', 'var(--cds-chart-grid)'))
+      .call((g) => g.selectAll('text').attr('fill', 'var(--color-fg-muted)').attr('dy', '1.1em').style('font-size', 'var(--cds-font-size-caption)'));
+    svg.append('line').attr('x1', xs(0)).attr('x2', xs(0)).attr('y1', m.t).attr('y2', height - m.b).attr('stroke', 'var(--cds-chart-axis)');
+    items.forEach((d) => {
+      const r = d.r, k = d.v >= 0 ? 'G' : (CAMP[r.bw_camp] || 'B'), weak = r.poll_class === '幾乎沒有';
+      const y = ys(r.county), h = ys.bandwidth();
+      const g = svg.append('g').style('cursor', 'pointer').on('click', () => openCounty(r.county))
+        .on('mousemove', (ev) => showTip(ev, box, full(r.county) + (weak ? '（無民調）' : ''), [[r.g_name + '（綠）', twoParty(r), 'G'], ['結構盤＋風向', r.base_g + (r.env || 0), 'O']], `候選人效應 ${(d.v > 0 ? '綠 +' : '藍 +') + Math.abs(d.v).toFixed(1)}・民調權重 ${pct0(r.poll_weight || 0)}`))
+        .on('mouseleave', hideTip);
+      g.append('rect').attr('x', Math.min(xs(0), xs(d.v))).attr('width', Math.max(1, Math.abs(xs(d.v) - xs(0)))).attr('y', y).attr('height', h).attr('rx', 3).attr('fill', C[k]).attr('fill-opacity', weak ? 0.35 : 0.9);
+      g.append('text').attr('x', m.l - 6).attr('y', y + h / 2).attr('dy', '0.35em').attr('text-anchor', 'end').attr('fill', 'var(--color-fg)').style('font-size', 'var(--cds-font-size-caption)').text(short(r.county));
+      g.append('text').attr('x', d.v >= 0 ? xs(d.v) + 4 : xs(d.v) - 4).attr('y', y + h / 2).attr('dy', '0.35em').attr('text-anchor', d.v >= 0 ? 'start' : 'end').attr('fill', 'var(--color-fg-muted)').style('font-size', 'var(--cds-font-size-caption)').text((d.v >= 0 ? '+' : '−') + Math.abs(d.v).toFixed(1));
+    });
+  }
+
+  // ===== CSV 下載與縣市連結 =====
+  const CSV_HEAD = ['期別', '發布日', '縣市', '選情', '領先者', '領先陣營', '領先者勝率', '投票率', '選舉人數', '藍白營候選人', '藍白營得票數', '藍白營得票率', '藍白營催票率', '綠營候選人', '綠營得票數', '綠營得票率', '綠營催票率', '人口', '備註'];
+  function csvRows(x, list) {
+    const label = Object.fromEntries(x.weeks.map((w) => [w.week, w.label]));
+    return [CSV_HEAD, ...list.map((r) => [label[r.week], r.week, r.county, r.rating, r.leader, r.leader_camp, r.leader_win, r.turnout, r.electorate, r.bw_name, r.bw_votes, r.bw_share, r.bw_mobil, r.g_name, r.g_votes, r.g_share, r.g_mobil, r.population, r.note])];
+  }
+  function saveCSV(name, table) {
+    const csv = table.map((row) => row.map((v) => { const s = v == null ? '' : String(v); return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }).join(',')).join('\r\n');
+    try {
+      const url = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
+      const a = document.createElement('a'); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    } catch (e) { /* 下載被擋時改用下方文字框 */ }
+    if (!window.LX_STANDALONE) { $('lx-csv-text').value = csv; $('lx-csv-fb').hidden = false; }
+  }
+  $('lx-csv').addEventListener('click', () => { if (!ctx) return; const list = ctx.counties.filter((r) => r.week === ctx.week).sort((a, b) => a.order - b.order); saveCSV(`taiwan-2026-mayor-forecast_${ctx.week}.csv`, csvRows(ctx, list)); });
+  $('lx-csv-all').addEventListener('click', () => { if (!ctx) return; const list = ctx.counties.slice().sort((a, b) => d3.ascending(a.week, b.week) || a.order - b.order); saveCSV('taiwan-2026-mayor-forecast_all-issues.csv', csvRows(ctx, list)); });
+  $('lx-csv-copy').addEventListener('click', async () => { const t = $('lx-csv-text'); try { await navigator.clipboard.writeText(t.value); $('lx-csv-copy').textContent = '已複製'; } catch (e) { t.select(); $('lx-csv-copy').textContent = '請按 Ctrl+C 複製'; } });
+  $('lx-csv-close').addEventListener('click', () => { $('lx-csv-fb').hidden = true; $('lx-csv-copy').textContent = '複製內容'; });
+  $('lx-share-btn').addEventListener('click', async () => {
+    const base = window.LX_SHARE_BASE || 'https://claude.ai/artifact/5QmPbsKjvEyGZhnqty94xg';
+    const link = base + '#county/' + encodeURIComponent(S.county);
+    const inp = $('lx-share-url'); inp.value = link;
+    try { await navigator.clipboard.writeText(link); $('lx-share-btn').textContent = '已複製連結'; inp.hidden = true; }
+    catch (e) { inp.hidden = false; inp.select(); $('lx-share-btn').textContent = '請手動複製'; }
+  });
 
   function renderHistory(x) {
     const s = x.seats;
@@ -988,7 +1391,9 @@
   }
   function hideTip() { tip.hidden = true; }
 
-  const named = location.hash.slice(1);
-  if (['overview', 'county', 'history', 'polls', 'method'].includes(named)) show(named);
+  // 連結：#頁面 或 #county/縣市名
+  let named = ''; try { named = decodeURIComponent(location.hash.slice(1)); } catch (e) {}
+  if (named.startsWith('county/')) { S.county = named.slice(7); show('county'); }
+  else if (['overview', 'county', 'scenario', 'compare', 'history', 'polls', 'method'].includes(named)) show(named);
 })();
 </script>

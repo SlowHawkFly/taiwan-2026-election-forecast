@@ -101,6 +101,10 @@ def inc_adj(c):
 out_c, out_k, out_p = [], [], []
 NAT_SD = 0.015
 SIMS = 20000
+SIMCAMP = {}  # 每縣市每次模擬的勝選陣營，用來算席次機率分布
+def camp_of(county, name):
+    b = bloc_of(county, name)
+    return ("白" if name in WHITE else "藍") if b == "B" else {"G": "綠", "O": "其他"}[b]
 nat_draws = [random.gauss(0, NAT_SD) for _ in range(SIMS)]
 
 for c, v in info.items():
@@ -118,9 +122,11 @@ for c, v in info.items():
         mean = {k: s / 100 for k, s in MANUAL[c].items()}
         sd_c = SD[cls]
         wins = {k: 0 for k in mean}
+        simw = []
         for i in range(SIMS):
             draw = {k: max(0.001, m + random.gauss(0, sd_c * math.sqrt(m / 0.35))) for k, m in mean.items()}
-            wins[max(draw, key=draw.get)] += 1
+            wk = max(draw, key=draw.get); wins[wk] += 1; simw.append(wk)
+        SIMCAMP[c] = [camp_of(c, n) for n in simw]
         shares = mean
         gfinal = None
         intervals = {k: (max(0, m - 1.2816 * sd_c * math.sqrt(m / 0.35)), m + 1.2816 * sd_c * math.sqrt(m / 0.35)) for k, m in mean.items()}
@@ -138,7 +144,10 @@ for c, v in info.items():
             tw = sum(w for w, _, _ in v["ps"]); spread = math.sqrt(sum(w * (g - v["gp"]) ** 2 for w, g, _ in v["ps"]) / tw)
         else: spread = 0.0
         sd_c = math.hypot(SD[cls], spread)
-        gwin = sum(1 for i in range(SIMS) if gfinal + nat_draws[i] + random.gauss(0, sd_c) > 0.5) / SIMS
+        gsim = [gfinal + nat_draws[i] + random.gauss(0, sd_c) > 0.5 for i in range(SIMS)]
+        gwin = sum(gsim) / SIMS
+        bwc = next((camp_of(c, n) for n, p, b, i in cands if b == "B"), "其他")
+        SIMCAMP[c] = ["綠" if x else bwc for x in gsim]
         shares, intervals, winp = {}, {}, {}
         for n, p, b, inc in cands:
             if b == "G": m = gfinal * rest
@@ -172,6 +181,8 @@ for c, v in info.items():
         bw_camp=("白" if bw and bw[0] in WHITE else "藍") if bw else "",
         leader_camp=("白" if leader in WHITE else "藍") if lb == "B" else {"G": "綠", "O": "其他"}[lb],
         poll_class=cls, poll_weight=round(wp, 2), n_polls=len(v["ps"]),
+        g_two=None if gfinal is None else round(gfinal, 4), sd=round(sd_c, 4), manual=c in MANUAL, g24p=round(COUNTIES[c][7], 4),
+        w22_name=RESULT22[c][0], w22_camp=RESULT22[c][1], g22=None if COUNTIES[c][6] is None else round(COUNTIES[c][6], 4),
         base_g=round(v["gb"], 4), poll_g=None if v["gp"] is None else round(v["gp"], 4), env=round(env_of(c), 4),
         adj_note="；".join(f"{t}（{a * ((1 - wp) / 0.4 if k == '派系' else 1):+.1f}）" for a, t, k in adjs if a) or "",
         note=NOTES.get(c, "")))
@@ -193,7 +204,14 @@ for p in POLLS:
             house=HOUSE.get(org, 0), support="、".join(f"{k} {s:g}%" for k, s in sup.items()), undecided=und / 100,
             g_two=None, weight=0.0, source=src))
 
-json.dump(dict(env=env, counties=out_c, candidates=out_k, polls=out_p), open(sys.argv[2] if len(sys.argv) > 2 else "out.json", "w"), ensure_ascii=False, indent=1)
+# 席次機率分布：同一次模擬裡各縣市的勝選陣營加總（全國誤差共用，所以各縣市會一起偏）
+seat_dist = {}
+for camp in ["藍", "白", "綠", "其他", "藍白"]:
+    hist = [0] * (len(COUNTIES) + 1)
+    for i in range(SIMS):
+        hist[sum(1 for c in COUNTIES if SIMCAMP[c][i] in (("藍", "白") if camp == "藍白" else (camp,)))] += 1
+    seat_dist[camp] = [round(h / SIMS, 4) for h in hist]
+json.dump(dict(env=env, counties=out_c, candidates=out_k, polls=out_p, seat_dist=seat_dist), open(sys.argv[2] if len(sys.argv) > 2 else "out.json", "w"), ensure_ascii=False, indent=1)
 print("全國風向", round(nat*100,1), {k: round(v*100,1) for k, v in REG_ENV.items()}, "無近期民調縣市外溢", SPILL*100)
 for r in sorted(out_c, key=lambda r: r["order"]):
     print(f"{r['county']} {r['poll_class']:4} base {r['base_g']:.3f} poll {r['poll_g'] if r['poll_g'] is not None else '-':>6} | 藍白 {r['bw_name']} {r['bw_share']*100:5.1f}%  綠 {r['g_name']} {r['g_share']*100:5.1f}% | 領先 {r['leader']} {r['leader_win']*100:.0f}% {r['rating']} | 投票率 {r['turnout']*100:.1f}% 選舉人 {r['electorate']:,}")
