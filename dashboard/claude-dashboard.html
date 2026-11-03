@@ -92,6 +92,11 @@
   .lx-sw { width: .85rem; height: .85rem; border-radius: 3px; display: inline-block; flex: none; }
   .lx-dot { width: .6rem; height: .6rem; border-radius: 50%; display: inline-block; flex: none; }
 
+  /* 人口泡泡圖：一縣市一圓，圓面積＝人口，位置固定（新北／台北、竹竹苗經人工調整） */
+  .lx-stack { display: grid; gap: var(--cds-gap-md); align-content: start; min-width: 0; }
+  .lx-bubble svg { display: block; width: 100%; max-width: 30rem; height: auto; margin-inline: auto; overflow: visible; }
+  .lx-bubble .lx-b { cursor: pointer; outline: none; }
+  .lx-bubble .lx-b:hover circle, .lx-bubble .lx-b:focus-visible circle { stroke: var(--color-fg) !important; stroke-width: 3px !important; }
   /* 方格地圖：第 1 欄金馬、第 3 欄澎湖、第 5–8 欄本島 */
   .lx-map { display: grid; grid-template-columns: 1fr 1.1fr 1fr .5fr repeat(4, 1fr); grid-auto-rows: 4.1rem; gap: 5px; max-width: 34rem; width: 100%; margin-inline: auto; }
   .lx-tile { border-radius: 7px; border: 1.5px solid transparent; padding: 3px 2px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 1px; text-align: center; cursor: pointer; font: inherit; line-height: 1.2; min-width: 0; overflow: hidden; color: var(--color-fg); }
@@ -238,6 +243,25 @@
       </div>
     </div>
 
+    <div class="lx-card" id="card-close">
+      <div class="lx-grid2">
+        <div class="lx-stack">
+          <div class="lx-card-head">
+            <h2 class="lx-h2">關鍵戰區</h2>
+            <span class="lx-note">領先者勝率低於 75% 的縣市</span>
+          </div>
+          <ul class="lx-list" id="lx-close" data-source="counties"></ul>
+        </div>
+        <div class="lx-stack">
+          <div class="lx-card-head">
+            <h2 class="lx-h2">本期變化</h2>
+            <span class="lx-note">與上一期相比</span>
+          </div>
+          <ul class="lx-list" id="lx-highlights" data-source="delta"></ul>
+        </div>
+      </div>
+    </div>
+
     <div class="lx-section" id="sec-pop">
       <div class="lx-card-head">
         <h2 class="lx-h2">版圖人口</h2>
@@ -262,14 +286,14 @@
         <div class="lx-legend" id="lx-map-legend"></div>
         <p class="lx-note">顏色越深越穩；點縣市看明細。</p>
       </div>
-      <div class="lx-card" id="card-close">
+      <div class="lx-card" id="card-bubble">
         <div class="lx-card-head">
-          <h2 class="lx-h2">關鍵戰區</h2>
-          <span class="lx-note">領先者勝率低於 75% 的縣市</span>
+          <h2 class="lx-h2">各縣市領先陣營（按人口）</h2>
+          <span class="lx-note">圓面積＝人口；顯示領先者的預測得票率</span>
         </div>
-        <ul class="lx-list" id="lx-close" data-source="counties"></ul>
-        <h3 class="lx-h2" style="font-size:var(--cds-font-size-body)">本期變化</h3>
-        <ul class="lx-list" id="lx-highlights" data-source="delta"></ul>
+        <div class="lx-bubble" id="lx-bubble" data-source="counties"></div>
+        <div class="lx-legend" id="lx-bubble-legend"></div>
+        <p class="lx-note">一個縣市一個圓，排在大致的地理位置；顏色越深越穩；點圓看明細。</p>
       </div>
     </div>
 
@@ -453,6 +477,7 @@
         <li><b>選舉人數</b>：中選會選前三天才公告，在那之前取 2022 年選舉人數 ×1.02 與 2024 總統選舉人數 ×1.005 的平均。</li>
         <li><b>陣營歸類</b>：藍白營包含國民黨、民眾黨，以及兩黨正式推薦或支持的無黨籍（如新竹市高虹安、嘉義縣吳品叡）。席次再拆成藍營與白營：白營為民眾黨或民眾黨出身、藍白共推者（嘉義市張啓楷、新竹市高虹安）。其他無黨籍列為「其他」。</li>
         <li><b>版圖人口</b>：各陣營預測領先縣市的人口加總，人口取內政部戶政司 2026 年 9 月底戶口統計速報。</li>
+        <li><b>各縣市領先陣營（按人口）</b>：一個縣市一個圓，圓面積與人口成正比，排在大致的地理位置（為了好讀，新北／台北與新竹／苗栗的相對位置經人工調整）。</li>
       </ul>
       <h3>六個步驟</h3>
       <ul>
@@ -516,6 +541,9 @@
     '屏東縣': [6, 10]
   };
   const STRENGTH = { '穩': 1, '傾向': .72, '微幅': .45, '拉鋸': .24 };
+  // 人口泡泡圖座標：[x, y, 半徑]，半徑∝√人口（2026 年 9 月底），預先排好不重疊
+  const BUBBLE = { '臺北市': [405.0, 130.0, 53.7], '新北市': [380.0, 0.0, 69.3], '桃園市': [279.2, 71.0, 53], '臺中市': [245.7, 256.2, 58.4], '臺南市': [107.5, 468.7, 46.9], '高雄市': [202.0, 516.6, 56.7], '基隆市': [468, 38, 20.6], '新竹市': [216.7, 127.1, 23.3], '新竹縣': [262.5, 150.0, 26.7], '宜蘭縣': [376.1, 202.4, 23.1], '苗栗縣': [216.7, 176.7, 25.1], '彰化縣': [157.6, 300.1, 37.8], '南投縣': [259.4, 338.3, 23.6], '雲林縣': [134.3, 363.9, 27.7], '嘉義市': [141.5, 411.1, 17.6], '嘉義縣': [184.9, 415.5, 23.6], '屏東縣': [198.9, 617.0, 30.4], '花蓮縣': [335.1, 349.2, 19.2], '臺東縣': [273.7, 538.3, 15.7], '澎湖縣': [68.1, 394.2, 11.3], '金門縣': [41.9, 304, 12.8], '連江縣': [73.4, 76, 7] };
+  const BUBBLE_VB = '-4 -73 500 724', BUBBLE_LEFT = 150;
   window.lxState = window.lxState || { page: 'overview', county: '臺北市', sort: { key: 'order', dir: 1 }, q: '', pq: '', f: 'all' };
   const S = window.lxState;
 
@@ -732,6 +760,29 @@
       map.append(t);
     });
     legend($('lx-map-legend'), true);
+
+    // 人口泡泡圖
+    const bx = $('lx-bubble'); bx.replaceChildren();
+    const bsvg = d3.select(bx).append('svg').attr('viewBox', BUBBLE_VB).attr('role', 'group').attr('aria-label', '各縣市領先陣營（按人口），圓面積代表人口');
+    rows.forEach((r) => {
+      const p = BUBBLE[r.county]; if (!p) return;
+      const [x, y, rad] = p; const k = CAMP[r.leader_camp], st = STRENGTH[r.rating], f = fill(k, st);
+      const ink = st >= .7 ? 'var(--lx-ink-on)' : 'var(--color-fg)';
+      const g = bsvg.append('g').attr('class', 'lx-b').attr('tabindex', 0).attr('role', 'button')
+        .attr('aria-label', `${r.county}：${r.leader}（${CAMP_NAME[k]}）預測得票率 ${pct(r.leader_share)}，${r.rating}，人口 ${wan(r.population)} 萬`);
+      g.append('circle').attr('cx', x).attr('cy', y).attr('r', rad).style('fill', f).style('stroke', C[k]).style('stroke-width', '1.5px');
+      const txt = (tx, ty, anchor, size, weight, col, halo, s) => g.append('text').attr('x', tx).attr('y', ty).attr('text-anchor', anchor)
+        .style('font-size', size + 'px').style('font-weight', weight).style('fill', col).style('stroke', halo).style('stroke-width', '3px')
+        .style('paint-order', 'stroke').style('stroke-linejoin', 'round').style('pointer-events', 'none').text(s);
+      if (rad >= 27) { txt(x, y - 2, 'middle', 15, 600, ink, f, short(r.county)); txt(x, y + 14, 'middle', 12, 500, ink, f, pct(r.leader_share)); }
+      else if (rad >= 15) txt(x, y + 4.5, 'middle', rad >= 19 ? 13 : 12, 600, ink, f, short(r.county));
+      else { const left = x < BUBBLE_LEFT; txt(left ? x - rad - 4 : x + rad + 4, y + 4, left ? 'end' : 'start', 12, 500, 'var(--color-fg)', 'var(--color-panel)', short(r.county)); }
+      g.on('click', () => openCounty(r.county));
+      g.on('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); openCounty(r.county); } });
+      g.on('mousemove', (ev) => showTip(ev, bx.parentElement, r.county, [[r.bw_name, r.bw_share, CAMP[r.bw_camp] || 'B'], [r.g_name, r.g_share, 'G']].filter((z) => z[0] !== '未提名' && z[1] > 0), `${r.rating}・領先者勝率 ${pct0(r.leader_win)}・人口 ${wan(r.population)} 萬`));
+      g.on('mouseleave', hideTip);
+    });
+    legend($('lx-bubble-legend'), true);
 
     // 關鍵戰區
     const close = rows.filter((r) => r.leader_win < 0.75).sort((a, b) => a.leader_win - b.leader_win);
