@@ -420,14 +420,14 @@
         <h2 class="lx-h2">民調資料庫</h2>
         <input id="lx-poll-search" type="search" placeholder="搜尋縣市或機構" aria-label="搜尋縣市或機構">
       </div>
-      <p class="lx-note">權重為該民調在所屬縣市民調平均中的占比；權重 0 表示未採計（TVBS 非封關民調、台北市 ETtoday，或超過採計期限）。</p>
+      <p class="lx-note">權重為該民調在所屬縣市民調平均中的占比；等級：A 為戴立安（×1.5）、B 為震傳媒／山水（×1.2）、C 為其他機構（×0.7）、D 為查不到原始來源或內容明顯不可信（不採計，滑鼠移到等級上可看理由）。權重 0 表示未採計（D 級、TVBS 非封關民調、台北市 ETtoday，或超過採計期限）。</p>
       <div class="lx-scroll">
         <table id="lx-polls" data-source="polls" data-row-key="id">
           <thead><tr>
             <th class="lx-l lx-sticky" data-field="county">縣市</th>
             <th class="lx-l" data-field="pollster">機構</th>
             <th class="lx-l" data-field="date">調查日</th>
-            <th data-field="tier">機構權重</th>
+            <th data-field="grade">等級</th>
             <th data-field="house">機構偏差修正</th>
             <th class="lx-l" data-field="support">支持度</th>
             <th data-field="undecided">未表態</th>
@@ -457,7 +457,7 @@
       <h3>六個步驟</h3>
       <ul>
         <li><b>結構基本盤</b>：2022 縣市長 40%、2024 總統 30%、2024 區域立委 30%，算出綠營在兩陣營中的占比。立委部分以民進黨得票占全部有效票計算，無黨籍視為非綠（台東劉櫂豪 2024 以無黨籍參選，現為陳瑩競總總幹事，其得票以 75% 計入綠營）。民眾黨選票（2024 柯文哲、2024 民眾黨立委、2022 民眾黨縣市長候選人）以 75% 轉給藍白、25% 計入綠營。台北 2022 不把黃珊珊的得票算入藍白；嘉義市 2022 為黃敏惠個人票加延後重選，不列入。</li>
-        <li><b>民調整合</b>：採計近 12 週的民調（沒有近期民調的縣市回溯 32 週），半衰期 14 天，再乘上樣本數平方根。機構權重：戴立安（信民協會，以及他在職期間的美麗島電子報）×1.5、震傳媒（山水民意）×1.2、其他 ×0.7；TVBS 只採封關民調；台北市的 ETtoday 民調不採計。未表態依該份民調已表態者的比例分配；機構自行公布推估得票率時，優先採用。</li>
+        <li><b>民調整合</b>：採計近 12 週的民調（沒有近期民調的縣市回溯 32 週），半衰期 14 天，再乘上樣本數平方根。機構權重：戴立安（信民協會，以及他在職期間的美麗島電子報）×1.5、震傳媒（山水民意）×1.2、其他 ×0.7；TVBS 只採封關民調；台北市的 ETtoday 民調不採計；查不到原始來源或內容明顯不可信的民調列為 D 級，只列出、不採計。未表態依該份民調已表態者的比例分配；機構自行公布推估得票率時，優先採用。</li>
         <li><b>機構偏差</b>：依委託立場與過往表現修正綠藍差距，例如新台灣國策智庫 −6、國民黨委託民調 +4 到 +5（需驗證）。</li>
         <li><b>混合</b>：近 6 週有 3 份以上民調的縣市，民調占 80%；有民調但較少的占 60%；幾乎沒有民調的占 30%。</li>
         <li><b>環境修正</b>：風向由「有民調縣市的民調減結構盤」加權平均推得，只套用在結構盤部分。上限：北北基桃與五都 ±7.5、其餘縣市 ±5。近 12 週沒有民調的縣市，沒有直接證據顯示風向外溢，改用民進黨自估的外溢幅度 +2.5。現任者 +1.5；滿意度 ±1.5 以內；輿論（含兩黨內部評估、重大事件）合計 ±1.5 以內；黨內分裂與派系不支持個別評估，不受 ±1.5 限制（目前只有新竹縣 +3，因為是在補結構盤，依結構盤權重自動換算：結構盤 40% 時 +3、20% 時 +1.5，需驗證）。逐項寫在明細。</li>
@@ -474,6 +474,7 @@
         <li>10/23 第三次修正：新竹縣加入藍營分裂的派系調整（徐欣瑩與陳見賢交惡、竹北藍白合破局），鄭朝方轉為小幅領先；席次拆分藍營與白營；新增版圖人口。</li>
         <li>10/28 第 3 期：依使用者指定，台北市的 ETtoday 民調不採計（其他縣市照常採計）。新竹縣民調增加、結構盤權重降為 20%，派系調整依比例由 +3 降為 +1.5。</li>
         <li>11/02 第 4 期：派系調整改為依結構盤權重自動換算（原本第 3 期手動降為 +1.5）。新竹縣 9 月民調超過 6 週後民調等級回到「少」，結構盤權重回到 40%，派系調整回到 +3。</li>
+        <li>11/03 第 5 期修正：新增 D 級規則（無原始來源或不可信的民調只列出、不採計）。新竹縣關鍵調查（10/25–26）因稱僅 5.9% 縣民知道鄭朝方參選、可信度存疑，列為 D 級；新竹縣轉回鄭朝方微幅領先。</li>
       </ul>
       <h3>限制</h3>
       <ul>
@@ -852,7 +853,7 @@
       const cells = [];
       if (withCounty) cells.push(td(p.county, 'lx-l lx-sticky lx-strong'));
       cells.push(td(p.pollster, 'lx-l'), td(p.date, 'lx-l'));
-      if (withCounty) cells.push(td('×' + p.tier), td(p.house ? (p.house > 0 ? '偏綠 ' : '偏藍 ') + Math.abs(p.house) : '0'));
+      if (withCounty) { const g = td(p.grade ? (p.grade === 'D' || p.grade === '不採計' ? p.grade : p.grade + ' ×' + p.tier) : '×' + p.tier, p.grade === 'D' || p.grade === '不採計' ? 'lx-dim' : null); if (p.grade_note) g.title = p.grade_note; cells.push(g, td(p.house ? (p.house > 0 ? '偏綠 ' : '偏藍 ') + Math.abs(p.house) : '0')); }
       cells.push(td(p.support, 'lx-l'), td(pct(p.undecided)), td(p.g_two == null ? '未採計' : pct(p.g_two), p.g_two == null ? 'lx-dim' : null), td(pct0(p.weight), p.weight ? null : 'lx-dim'), td(link, 'lx-l'));
       tr.append(...cells);
       return tr;

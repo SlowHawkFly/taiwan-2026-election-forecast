@@ -35,19 +35,28 @@ def poll_g(c, p, gb):
     gg = g / (g + b)
     return gg - HOUSE.get(org, 0) / 200.0
 
+def grade_of(county, org, date):
+    # A：戴立安（×1.5）；B：震傳媒／山水（×1.2）；C：其他（×0.7）；D：無來源或不可信，不採計；不採計：使用者指定排除的機構
+    if (county, org, date) in D_GRADE: return "D", D_GRADE[(county, org, date)]
+    if org in EXCLUDE: return "不採計", "TVBS 只採封關民調"
+    if (county, org) in EXCLUDE_PAIRS: return "不採計", "使用者指定此縣市不採計該機構"
+    t = TIER.get(org, 0.7)
+    if org == "美麗島電子報" and date >= T1_MLD_END: t = 0.7
+    return ("A" if t >= 1.5 else "B" if t >= 1.2 else "C"), ""
+
 def poll_weight(p):
     county, org, date, n, sup, und, est, src = p
-    if org in EXCLUDE or (county, org) in EXCLUDE_PAIRS: return 0.0
+    if org in EXCLUDE or (county, org) in EXCLUDE_PAIRS or (county, org, date) in D_GRADE: return 0.0
     age = (TODAY - dt.date.fromisoformat(date)).days
-    has_recent = any(q[0] == county and (q[1] not in EXCLUDE and (q[0], q[1]) not in EXCLUDE_PAIRS) and 0 <= (TODAY - dt.date.fromisoformat(q[2])).days <= 84 for q in POLLS)
+    has_recent = any(q[0] == county and (q[1] not in EXCLUDE and (q[0], q[1]) not in EXCLUDE_PAIRS and (q[0], q[1], q[2]) not in D_GRADE) and 0 <= (TODAY - dt.date.fromisoformat(q[2])).days <= 84 for q in POLLS)
     if age < 0 or age > (84 if has_recent else 224): return 0.0
     tier = TIER.get(org, 0.7)
     if org == "美麗島電子報" and date >= T1_MLD_END: tier = 0.7  # 戴立安離開後的美麗島民調不再列 T1
     return tier * 0.5 ** (age / HALF_LIFE) * math.sqrt(n / 1000)
 
 def classify(c):
-    recent = [p for p in POLLS if p[0] == c and (p[1] not in EXCLUDE and (p[0], p[1]) not in EXCLUDE_PAIRS) and 0 <= (TODAY - dt.date.fromisoformat(p[2])).days <= 42]
-    older = [p for p in POLLS if p[0] == c and (p[1] not in EXCLUDE and (p[0], p[1]) not in EXCLUDE_PAIRS) and 42 < (TODAY - dt.date.fromisoformat(p[2])).days <= 84]
+    recent = [p for p in POLLS if p[0] == c and (p[1] not in EXCLUDE and (p[0], p[1]) not in EXCLUDE_PAIRS and (p[0], p[1], p[2]) not in D_GRADE) and 0 <= (TODAY - dt.date.fromisoformat(p[2])).days <= 42]
+    older = [p for p in POLLS if p[0] == c and (p[1] not in EXCLUDE and (p[0], p[1]) not in EXCLUDE_PAIRS and (p[0], p[1], p[2]) not in D_GRADE) and 42 < (TODAY - dt.date.fromisoformat(p[2])).days <= 84]
     if len(recent) >= 3: return "多"
     if len(recent) >= 1 or len(older) >= 1: return "少"
     return "幾乎沒有"
@@ -75,7 +84,7 @@ for mac in set(MACRO.values()):
     REG_ENV[mac] = e if e is not None else nat
 SPILL = 0.025  # 近 12 週無民調縣市：採民進黨自估的外溢幅度 +2～3 個百分點
 def has_recent_poll(c):
-    return any(p[0] == c and (p[1] not in EXCLUDE and (p[0], p[1]) not in EXCLUDE_PAIRS) and 0 <= (TODAY - dt.date.fromisoformat(p[2])).days <= 84 for p in POLLS)
+    return any(p[0] == c and (p[1] not in EXCLUDE and (p[0], p[1]) not in EXCLUDE_PAIRS and (p[0], p[1], p[2]) not in D_GRADE) and 0 <= (TODAY - dt.date.fromisoformat(p[2])).days <= 84 for p in POLLS)
 def env_of(c):
     e = REG_ENV[MACRO[COUNTIES[c][0]]] if has_recent_poll(c) else SPILL
     cap = 0.075 if c in METRO else 0.05
@@ -173,14 +182,14 @@ for c, v in info.items():
             votes=round(sh * valid), mobil=round(sh * valid / elect, 4), win=round(winp[n], 3)))
     for w, g, p in v["ps"]:
         county, org, date, n, sup, und, est, src = p
-        out_p.append(dict(week=WEEK, county=c, pollster=org, date=date, sample=n, tier=TIER.get(org, 0.7),
+        out_p.append(dict(week=WEEK, county=c, pollster=org, date=date, sample=n, tier=TIER.get(org, 0.7), grade=grade_of(c, org, date)[0], grade_note=grade_of(c, org, date)[1],
             house=HOUSE.get(org, 0), support="、".join(f"{k} {s:g}%" for k, s in sup.items()), undecided=und / 100,
             g_two=round(g, 4), weight=round(w / sum(x for x, _, _ in v["ps"]), 3), source=src))
     # 未採計的民調也列出（例如 TVBS 非封關、超過 12 週）
 for p in POLLS:
     county, org, date, n, sup, und, est, src = p
     if poll_weight(p) == 0:
-        out_p.append(dict(week=WEEK, county=county, pollster=org, date=date, sample=n, tier=TIER.get(org, 0.7),
+        out_p.append(dict(week=WEEK, county=county, pollster=org, date=date, sample=n, tier=TIER.get(org, 0.7), grade=grade_of(county, org, date)[0], grade_note=grade_of(county, org, date)[1],
             house=HOUSE.get(org, 0), support="、".join(f"{k} {s:g}%" for k, s in sup.items()), undecided=und / 100,
             g_two=None, weight=0.0, source=src))
 
